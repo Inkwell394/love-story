@@ -3,7 +3,7 @@
     name: love-story
     runtime: python
     buildCommand: pip install fastapi uvicorn python-jose[cryptography] passlib[bcrypt] python-multipart aiofiles python-dotenv
-    startCommand: python start.py
+    startCommand: python app.py
     envVars:
       - key: LOVE_SECRET_KEY
         value: love-story-render-deploy-key-2026
