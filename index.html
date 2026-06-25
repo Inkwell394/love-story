@@ -229,6 +229,22 @@ body { font-family: 'Noto Serif SC', serif; background: #1a1a2e; color: #fff; ov
   </div>
 </section>
 
+<section class="section" id="blessings">
+  <h2 class="section-title fade-up">🎉 祝福墙</h2>
+  <p class="section-subtitle fade-up">写下对我们的祝福吧 ❤️</p>
+  <div class="message-board">
+    <div class="message-form fade-up" style="flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;width:100%">
+        <input type="text" id="blessName" placeholder="你的名字" maxlength="20" style="flex:0 0 150px;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
+        <input type="text" id="blessText" placeholder="写下你的祝福..." maxlength="280" style="flex:1;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
+      </div>
+      <div style="display:flex;justify-content:center">
+        <button id="sendBlessing" style="padding:10px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff;font-size:1rem;font-family:'Noto Serif SC',serif;cursor:pointer;transition:all 0.3s">💐 送祝福</button>
+      </div>
+    </div>
+    <div class="messages-wall" id="blessingsWall" style="margin-top:10px"></div>
+  </div>
+</section>
 <section class="section" id="messages">
   <h2 class="section-title fade-up">💌 爱的留言板</h2>
   <p class="section-subtitle fade-up">写下你想对 TA 说的话</p>
@@ -523,6 +539,50 @@ function escHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}// ===== Blessings =====
+async function initBlessings() {
+  document.getElementById('sendBlessing').addEventListener('click', sendBlessing);
+  document.getElementById('blessText').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendBlessing(); });
+  loadBlessings();
+}
+
+async function sendBlessing() {
+  const name = document.getElementById('blessName').value.trim();
+  const text = document.getElementById('blessText').value.trim();
+  if (!name) { alert('请输入你的名字'); document.getElementById('blessName').focus(); return; }
+  if (!text) { alert('请输入祝福语'); document.getElementById('blessText').focus(); return; }
+  try {
+    await api('/api/blessings', 'POST', {name, text}, false);
+    document.getElementById('blessName').value = '';
+    document.getElementById('blessText').value = '';
+    loadBlessings();
+  } catch(e) { alert('发送失败: ' + e.message); }
+}
+
+async function loadBlessings() {
+  const wall = document.getElementById('blessingsWall');
+  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">加载中...</div>';
+  try {
+    const list = await api('/api/blessings', 'GET', null, false);
+    wall.innerHTML = '';
+    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1'];
+    const icons = ['💐','🌸','🌺','🌷','🌹','💕','✨','🌟','🎉','🎊'];
+    list.forEach((b, i) => {
+      const card = document.createElement('div');
+      card.className = 'message-note fade-up';
+      card.style.background = colors[i % colors.length];
+      card.innerHTML = '<div style="font-size:1.2rem;margin-bottom:4px">' + icons[i % icons.length] + ' <strong>' + escHtml(b.name) + '</strong></div>'
+        + '<div class="note-text">' + escHtml(b.text) + '</div>'
+        + '<div class="note-time"><i class="far fa-clock"></i> ' + b.created_at.slice(0,10) + '</div>';
+      wall.appendChild(card);
+    });
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  } catch(e) {
+    wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:20px">⚠️ 暂时无法加载祝福墙</div>';
+  }
 }function initMusicPlayer() {
   const player = document.getElementById('musicPlayer'); const btn = document.getElementById('musicToggle');
   let playing = false;

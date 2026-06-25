@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from database import init_db, get_conn
 from auth import hash_password
-from routers import auth, messages, comments
+from routers import auth, messages, comments, blessings
 
 app = FastAPI(title="Love Story API", version="1.0.0")
 
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(messages.router)
 app.include_router(comments.router)
+app.include_router(blessings.router)
 
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)

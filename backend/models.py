@@ -46,3 +46,15 @@ class CommentOut(BaseModel):
     username: str
     nickname: str
     created_at: str
+
+
+# ===== ?? =====
+class BlessingCreate(BaseModel):
+    name: str
+    text: str
+
+class BlessingOut(BaseModel):
+    id: int
+    name: str
+    text: str
+    created_at: str

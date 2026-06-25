@@ -28,6 +28,13 @@ def init_db():
             FOREIGN KEY (username) REFERENCES users(username)
         );
 
+        CREATE TABLE IF NOT EXISTS blessings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours'))
+        );
+
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_id INTEGER NOT NULL,
