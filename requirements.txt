@@ -1,7 +1,0 @@
-﻿fastapi
-uvicorn
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-aiofiles
-python-dotenv
