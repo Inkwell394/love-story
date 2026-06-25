@@ -1,10 +1,7 @@
-﻿import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from fastapi import APIRouter, Depends, HTTPException
-from backend.database import get_conn
-from backend.models import UserLogin, TokenOut, UserOut
-from backend.auth import hash_password, verify_password, create_token, get_current_user
+﻿from fastapi import APIRouter, Depends, HTTPException
+from database import get_conn
+from models import UserLogin, TokenOut, UserOut
+from auth import hash_password, verify_password, create_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
