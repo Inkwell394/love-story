@@ -190,7 +190,11 @@ body { font-family: 'Noto Serif SC', serif; background: #1a1a2e; color: #fff; ov
     <div class="hero-names"><span class="name-her" id="nameHerDisplay">她</span><span class="name-heart">❤</span><span class="name-him" id="nameHimDisplay">他</span></div>
     <div class="heart-container" id="heartContainer"><div class="heart"></div></div>
   </div>
-  <a class="scroll-down" href="#timeline"><span>向下滚动</span><i class="fas fa-chevron-down"></i></a>
+  <div style="position:absolute;top:20px;right:20px;z-index:10;display:flex;gap:10px;align-items:center">
+  <span id="loginStatus" style="color:rgba(255,255,255,0.7);font-size:0.85rem;font-family:Dancing Script,cursive;display:none"></span>
+  <button id="loginToggleBtn" onclick="showLogin()" style="padding:8px 18px;border-radius:30px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-family:Noto Serif SC,serif;font-size:0.85rem;transition:all 0.3s;backdrop-filter:blur(5px)">登录</button>
+</div>
+<a class="scroll-down" href="#timeline"><span>向下滚动</span><i class="fas fa-chevron-down"></i></a>
 </section>
 <section class="section" id="timeline">
   <h2 class="section-title fade-up">💫 我们的时光轴</h2>
@@ -283,6 +287,7 @@ const galleryData = [
   { url: 'img/4da34d6a3722245940a8e5100a46ada8.jpg', caption: '💑 新增美好回忆' },
 ];
 const musicUrl = ''; // <-- Set to your music file URL
+const API_BASE = 'http://127.0.0.1:8000'; // <-- 后端 API 地址，部署时改为服务器地址
 // ============================================================
 //  Code - No need to modify below
 // ============================================================
@@ -340,40 +345,185 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') moveLight(-1);
   if (e.key === 'ArrowRight') moveLight(1);
 });
-function getMsgs() { try { return JSON.parse(localStorage.getItem('loveMsgs')) || []; } catch { return []; } }
-function saveMsgs(m) { localStorage.setItem('loveMsgs', JSON.stringify(m)); }
-function initMessages() {
-  loadMsgs();
+// ===== API Helpers =====
+function getToken() { return localStorage.getItem('loveToken'); }
+function saveToken(t) { localStorage.setItem('loveToken', t); }
+function clearToken() { localStorage.removeItem('loveToken'); updateLoginUI(); }
+
+async function api(url, method, body, auth) {
+  const opts = { method, headers: {} };
+  if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+  if (auth !== false) { const t = getToken(); if (t) opts.headers['Authorization'] = 'Bearer ' + t; }
+  const r = await fetch(API_BASE + url, opts);
+  if (!r.ok) { const e = await r.json().catch(() => ({detail: r.statusText})); throw new Error(e.detail || '请求失败'); }
+  return r.json();
+}
+
+// ===== Login =====
+function showLogin() { document.getElementById('loginOverlay').classList.add('active'); document.getElementById('loginError').style.display='none'; }
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  if (!username || !password) return;
+  try {
+    const r = await fetch(API_BASE + '/api/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    if (!r.ok) { document.getElementById('loginError').style.display='block'; return; }
+    const data = await r.json();
+    saveToken(data.access_token);
+    document.getElementById('loginOverlay').classList.remove('active');
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').style.display='none';
+    updateLoginUI();
+    loadMsgs();
+  } catch(e) { alert('登录失败: ' + e.message); }
+}
+
+function logout() { clearToken(); updateLoginUI(); loadMsgs(); }
+
+function updateLoginUI() {
+  const token = getToken();
+  const btn = document.getElementById('loginToggleBtn');
+  const status = document.getElementById('loginStatus');
+  if (token) {
+    btn.textContent = '退出';
+    btn.onclick = logout;
+    status.style.display = 'inline';
+    // 解析 nickname
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      status.textContent = payload.sub;
+    } catch { status.textContent = '已登录'; }
+  } else {
+    btn.textContent = '登录';
+    btn.onclick = showLogin;
+    status.style.display = 'none';
+  }
+}
+
+// ===== Messages =====
+function getMsgs() { return []; } // legacy stub
+
+async function initMessages() {
+  updateLoginUI();
   document.getElementById('sendMessage').addEventListener('click', sendMsg);
   document.getElementById('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
   document.getElementById('clearMessages').addEventListener('click', () => {
-    if (confirm('确定要清空所有留言吗？')) { localStorage.removeItem('loveMsgs'); loadMsgs(); }
+    if (confirm('确定要清空所有留言吗？')) {
+      fetch(API_BASE + '/api/messages', {method:'GET'}).then(r=>r.json()).then(msgs => {
+        const token = getToken();
+        Promise.all(msgs.filter(m=>m.username===getUsername()).map(m =>
+          fetch(API_BASE + '/api/messages/' + m.id, {method:'DELETE', headers:{'Authorization':'Bearer '+token}})
+        )).then(() => loadMsgs());
+      });
+    }
   });
 }
-function loadMsgs() {
-  const msgs = getMsgs(); const wall = document.getElementById('messagesWall'); wall.innerHTML = '';
-  const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1','#e3f2fd','#f3e5f5'];
-  msgs.slice().reverse().forEach((msg, i) => {
-    const ri = msgs.length - 1 - i;
-    const note = document.createElement('div'); note.className = 'message-note';
-    note.style.background = colors[ri % colors.length];
-    note.innerHTML = '<div class="note-text">' + escHtml(msg.text) + '</div><div class="note-time"><i class="far fa-clock"></i> ' + msg.time + '</div><button class="note-delete" data-i="' + ri + '"><i class="fas fa-times"></i></button>';
-    note.querySelector('.note-delete').addEventListener('click', (e) => {
-      e.stopPropagation(); const m = getMsgs();
-      const di = parseInt(e.currentTarget.getAttribute('data-i'));
-      if (di >= 0 && di < m.length) { m.splice(di, 1); saveMsgs(m); loadMsgs(); }
+
+function getUsername() {
+  try { const t = getToken(); if (!t) return null; return JSON.parse(atob(t.split('.')[1])).sub; } catch { return null; }
+}
+
+async function sendMsg() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!getToken()) { showLogin(); return; }
+  try {
+    await api('/api/messages', 'POST', {text});
+    input.value = '';
+    loadMsgs();
+  } catch(e) { alert('发送失败: ' + e.message); }
+}
+
+async function loadMsgs() {
+  const wall = document.getElementById('messagesWall');
+  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px">加载中...</div>';
+  try {
+    const msgs = await api('/api/messages', 'GET', null, false);
+    wall.innerHTML = '';
+    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1','#e3f2fd','#f3e5f5'];
+    const curUser = getUsername();
+    msgs.forEach((msg, i) => {
+      const color = colors[i % colors.length];
+      const note = document.createElement('div');
+      note.className = 'message-note fade-up';
+      note.style.background = color;
+      let commentsHtml = '';
+      if (msg.comments && msg.comments.length > 0) {
+        commentsHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.1)">';
+        msg.comments.forEach(c => {
+          const isOwner = c.username === curUser;
+          commentsHtml += '<div style="font-size:0.8rem;color:#555;margin-bottom:4px;display:flex;justify-content:space-between"><span><strong>' + escHtml(c.nickname) + '</strong>: ' + escHtml(c.text) + '</span><span style="font-size:0.65rem;color:#999">' + c.created_at.slice(5,16) + (isOwner ? ' <span class="del-comment" data-mid="' + msg.id + '" data-cid="' + c.id + '" style="color:#e74c3c;cursor:pointer">×</span>' : '') + '</span></div>';
+        });
+        commentsHtml += '</div>';
+      }
+      const isOwner = msg.username === curUser;
+      note.innerHTML = '<div class="note-text">' + escHtml(msg.text) + '</div>'
+        + '<div class="note-time" style="display:flex;justify-content:space-between;align-items:center">'
+        + '<span><i class="far fa-clock"></i> ' + msg.created_at.slice(0,16) + ' · ' + escHtml(msg.nickname) + '</span>'
+        + '<span>' + (isOwner ? '<span class="note-delete" data-id="' + msg.id + '" style="margin-left:8px"><i class="fas fa-trash-alt" style="font-size:0.7rem"></i></span>' : '')
+        + '<span class="reply-btn" data-id="' + msg.id + '" style="margin-left:8px;cursor:pointer;color:#888;font-size:0.7rem"><i class="fas fa-reply"></i></span>'
+        + '</span></div>'
+        + commentsHtml
+        + '<div class="reply-box" id="reply-' + msg.id + '" style="display:none;margin-top:8px">'
+        + '<div style="display:flex;gap:6px"><input type="text" class="reply-input" placeholder="回复..." style="flex:1;padding:6px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:20px;font-size:0.8rem;outline:none;background:rgba(255,255,255,0.7)"><button class="reply-send" data-id="' + msg.id + '" style="padding:6px 14px;border:none;border-radius:20px;background:#ff6b9d;color:#fff;cursor:pointer;font-size:0.8rem">回复</button></div></div>';
+      wall.appendChild(note);
     });
-    wall.appendChild(note);
-  });
+    // Bind events
+    wall.querySelectorAll('.note-delete').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.dataset.id;
+        if (confirm('删除这条留言？')) { await api('/api/messages/' + id, 'DELETE'); loadMsgs(); }
+      });
+    });
+    wall.querySelectorAll('.reply-btn').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const box = document.getElementById('reply-' + id);
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        if (box.style.display === 'block') box.querySelector('.reply-input').focus();
+      });
+    });
+    wall.querySelectorAll('.reply-send').forEach(el => {
+      el.addEventListener('click', async () => {
+        if (!getToken()) { showLogin(); return; }
+        const id = el.dataset.id;
+        const input = document.getElementById('reply-' + id).querySelector('.reply-input');
+        const text = input.value.trim();
+        if (!text) return;
+        await api('/api/comments/' + id, 'POST', {text});
+        input.value = '';
+        loadMsgs();
+      });
+    });
+    wall.querySelectorAll('.del-comment').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const mid = e.currentTarget.dataset.mid;
+        const cid = e.currentTarget.dataset.cid;
+        await api('/api/comments/' + mid + '/' + cid, 'DELETE');
+        loadMsgs();
+      });
+    });
+    // IntersectionObserver for animations
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  } catch(e) { wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:30px">⚠️ 连接后端失败</div>'; }
 }
-function sendMsg() {
-  const input = document.getElementById('messageInput'); const text = input.value.trim();
-  if (!text) return; const now = new Date();
-  const ts = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  const msgs = getMsgs(); msgs.push({ text, time: ts }); saveMsgs(msgs); input.value = ''; loadMsgs();
-}
-function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function initMusicPlayer() {
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}function initMusicPlayer() {
   const player = document.getElementById('musicPlayer'); const btn = document.getElementById('musicToggle');
   let playing = false;
   if (!musicUrl) { player.style.display = 'none'; return; }
@@ -424,6 +574,8 @@ function initSettings() {
   const overlay = document.getElementById('settingsOverlay');
   document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e')) { e.preventDefault(); overlay.classList.add('active'); } });
   document.getElementById('settingsCancel').addEventListener('click', () => overlay.classList.remove('active'));
+  document.getElementById('loginCancel').addEventListener('click', () => document.getElementById('loginOverlay').classList.remove('active'));
+  document.getElementById('loginOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) document.getElementById('loginOverlay').classList.remove('active'); });
   document.getElementById('settingsSave').addEventListener('click', () => {
     const her = document.getElementById('settingsHerName').value.trim() || '她';
     const him = document.getElementById('settingsHimName').value.trim() || '他';
