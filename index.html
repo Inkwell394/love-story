@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Ma+Shan+Zheng&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -361,292 +361,144 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') moveLight(-1);
   if (e.key === 'ArrowRight') moveLight(1);
 });
-// ===== API Helpers =====
-function getToken() { return localStorage.getItem('loveToken'); }
-function saveToken(t) { localStorage.setItem('loveToken', t); }
-function clearToken() { localStorage.removeItem('loveToken'); updateLoginUI(); }
-
-async function api(url, method, body, auth) {
-  const opts = { method, headers: {} };
-  if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
-  if (auth !== false) { const t = getToken(); if (t) opts.headers['Authorization'] = 'Bearer ' + t; }
-  const r = await fetch(API_BASE + url, opts);
-  if (!r.ok) { const e = await r.json().catch(() => ({detail: r.statusText})); throw new Error(e.detail || '请求失败'); }
-  return r.json();
-}
-
-// ===== Login =====
-function showLogin() { document.getElementById('loginOverlay').classList.add('active'); document.getElementById('loginError').style.display='none'; }
-
+// ===== Supabase Login =====
 async function doLogin() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value.trim();
-  if (!username || !password) return;
-  try {
-    const r = await fetch(API_BASE + '/api/auth/login', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username, password})
-    });
-    if (!r.ok) { document.getElementById('loginError').style.display='block'; return; }
-    const data = await r.json();
-    saveToken(data.access_token);
-    document.getElementById('loginOverlay').classList.remove('active');
-    document.getElementById('loginUsername').value = '';
-    document.getElementById('loginPassword').value = '';
-    document.getElementById('loginError').style.display='none';
-    updateLoginUI();
-    loadMsgs();
-  } catch(e) { alert('登录失败: ' + e.message); }
+  const username = document.getElementById("loginUsername").value.trim()
+  const password = document.getElementById("loginPassword").value.trim()
+  if (!username || !password) return
+  const { error } = await supabase.auth.signInWithPassword({ email: username + "@love.local", password })
+  if (error) { document.getElementById("loginError").style.display = "block"; return }
+  document.getElementById("loginOverlay").classList.remove("active")
+  document.getElementById("loginError").style.display = "none"
+  updateLoginUI()
+  loadMsgs()
 }
 
-function logout() { clearToken(); updateLoginUI(); loadMsgs(); }
+function logout() {
+  supabase.auth.signOut()
+  updateLoginUI()
+  loadMsgs()
+}
 
 function updateLoginUI() {
-  const token = getToken();
-  const btn = document.getElementById('loginToggleBtn');
-  const status = document.getElementById('loginStatus');
-  if (token) {
-    btn.textContent = '退出';
-    btn.onclick = logout;
-    status.style.display = 'inline';
-    // 解析 nickname
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      status.textContent = payload.sub;
-    } catch { status.textContent = '已登录'; }
+  const session = supabase.auth.getSession()
+  const btn = document.getElementById("loginToggleBtn")
+  const status = document.getElementById("loginStatus")
+  if (session) {
+    btn.textContent = "exit"
+    btn.onclick = logout
+    status.style.display = "inline"
+    status.textContent = session.user.email?.split("@")[0] || "user"
   } else {
-    btn.textContent = '登录';
-    btn.onclick = showLogin;
-    status.style.display = 'none';
+    btn.textContent = "login"
+    btn.onclick = showLogin
+    status.style.display = "none"
   }
 }
 
 // ===== Messages =====
-function getMsgs() { return []; } // legacy stub
-
 async function initMessages() {
-  updateLoginUI();
-  document.getElementById('sendMessage').addEventListener('click', sendMsg);
-  document.getElementById('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
-  document.getElementById('clearMessages').addEventListener('click', () => {
-    if (confirm('确定要清空所有留言吗？')) {
-      fetch(API_BASE + '/api/messages', {method:'GET'}).then(r=>r.json()).then(msgs => {
-        const token = getToken();
-        Promise.all(msgs.filter(m=>m.username===getUsername()).map(m =>
-          fetch(API_BASE + '/api/messages/' + m.id, {method:'DELETE', headers:{'Authorization':'Bearer '+token}})
-        )).then(() => loadMsgs());
-      });
-    }
-  });
-}
-
-function getUsername() {
-  try { const t = getToken(); if (!t) return null; return JSON.parse(atob(t.split('.')[1])).sub; } catch { return null; }
+  updateLoginUI()
+  document.getElementById("sendMessage").addEventListener("click", sendMsg)
+  document.getElementById("messageInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMsg() })
+  loadMsgs()
 }
 
 async function sendMsg() {
-  const input = document.getElementById('messageInput');
-  const text = input.value.trim();
-  if (!text) return;
-  if (!getToken()) { showLogin(); return; }
-  try {
-    await api('/api/messages', 'POST', {text});
-    input.value = '';
-    loadMsgs();
-  } catch(e) { alert('发送失败: ' + e.message); }
+  const input = document.getElementById("messageInput")
+  const text = input.value.trim()
+  if (!text) return
+  const session = supabase.auth.getSession()
+  if (!session) { showLogin(); return }
+  const nickname = session.user.email?.split("@")[0] || "user"
+  await supabase.from("messages").insert({ text, username: session.user.id, nickname })
+  input.value = ""
+  loadMsgs()
 }
 
 async function loadMsgs() {
-  const wall = document.getElementById('messagesWall');
-  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px">加载中...</div>';
-  try {
-    const msgs = await api('/api/messages', 'GET', null, false);
-    wall.innerHTML = '';
-    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1','#e3f2fd','#f3e5f5'];
-    const curUser = getUsername();
-    msgs.forEach((msg, i) => {
-      const color = colors[i % colors.length];
-      const note = document.createElement('div');
-      note.className = 'message-note fade-up';
-      note.style.background = color;
-      let commentsHtml = '';
-      if (msg.comments && msg.comments.length > 0) {
-        commentsHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.1)">';
-        msg.comments.forEach(c => {
-          const isOwner = c.username === curUser;
-          commentsHtml += '<div style="font-size:0.8rem;color:#555;margin-bottom:4px;display:flex;justify-content:space-between"><span><strong>' + escHtml(c.nickname) + '</strong>: ' + escHtml(c.text) + '</span><span style="font-size:0.65rem;color:#999">' + c.created_at.slice(5,16) + (isOwner ? ' <span class="del-comment" data-mid="' + msg.id + '" data-cid="' + c.id + '" style="color:#e74c3c;cursor:pointer">×</span>' : '') + '</span></div>';
-        });
-        commentsHtml += '</div>';
-      }
-      const isOwner = msg.username === curUser;
-      note.innerHTML = '<div class="note-text">' + escHtml(msg.text) + '</div>'
-        + '<div class="note-time" style="display:flex;justify-content:space-between;align-items:center">'
-        + '<span><i class="far fa-clock"></i> ' + msg.created_at.slice(0,16) + ' · ' + escHtml(msg.nickname) + '</span>'
-        + '<span>' + (isOwner ? '<span class="note-delete" data-id="' + msg.id + '" style="margin-left:8px"><i class="fas fa-trash-alt" style="font-size:0.7rem"></i></span>' : '')
-        + '<span class="reply-btn" data-id="' + msg.id + '" style="margin-left:8px;cursor:pointer;color:#888;font-size:0.7rem"><i class="fas fa-reply"></i></span>'
-        + '</span></div>'
-        + commentsHtml
-        + '<div class="reply-box" id="reply-' + msg.id + '" style="display:none;margin-top:8px">'
-        + '<div style="display:flex;gap:6px"><input type="text" class="reply-input" placeholder="回复..." style="flex:1;padding:6px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:20px;font-size:0.8rem;outline:none;background:rgba(255,255,255,0.7)"><button class="reply-send" data-id="' + msg.id + '" style="padding:6px 14px;border:none;border-radius:20px;background:#ff6b9d;color:#fff;cursor:pointer;font-size:0.8rem">回复</button></div></div>';
-      wall.appendChild(note);
-    });
-    // Bind events
-    wall.querySelectorAll('.note-delete').forEach(el => {
-      el.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = e.currentTarget.dataset.id;
-        if (confirm('删除这条留言？')) { await api('/api/messages/' + id, 'DELETE'); loadMsgs(); }
-      });
-    });
-    wall.querySelectorAll('.reply-btn').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.dataset.id;
-        const box = document.getElementById('reply-' + id);
-        box.style.display = box.style.display === 'none' ? 'block' : 'none';
-        if (box.style.display === 'block') box.querySelector('.reply-input').focus();
-      });
-    });
-    wall.querySelectorAll('.reply-send').forEach(el => {
-      el.addEventListener('click', async () => {
-        if (!getToken()) { showLogin(); return; }
-        const id = el.dataset.id;
-        const input = document.getElementById('reply-' + id).querySelector('.reply-input');
-        const text = input.value.trim();
-        if (!text) return;
-        await api('/api/comments/' + id, 'POST', {text});
-        input.value = '';
-        loadMsgs();
-      });
-    });
-    wall.querySelectorAll('.del-comment').forEach(el => {
-      el.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const mid = e.currentTarget.dataset.mid;
-        const cid = e.currentTarget.dataset.cid;
-        await api('/api/comments/' + mid + '/' + cid, 'DELETE');
-        loadMsgs();
-      });
-    });
-    // IntersectionObserver for animations
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
-  } catch(e) { wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:30px">⚠️ 连接后端失败</div>'; }
+  const wall = document.getElementById("messagesWall")
+  wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.4);padding:30px\">loading...</div>"
+  const { data: msgs } = await supabase
+    .from("messages")
+    .select("*, comments(*)")
+    .order("created_at", { ascending: false })
+  wall.innerHTML = ""
+  if (!msgs || msgs.length === 0) return
+  const colors = ["#ffe4e6","#fff3cd","#cce5ff","#e8daef","#d5f4e6","#fce4ec","#e8f5e9","#fff8e1"]
+  const curUserId = supabase.auth.getSession()?.user?.id
+  msgs.forEach((msg, i) => {
+    const note = document.createElement("div")
+    note.className = "message-note fade-up"
+    note.style.background = colors[i % colors.length]
+    let ch = ""
+    if (msg.comments?.length > 0) {
+      ch = "<div style=\"margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.1)\">"
+      msg.comments.forEach(c => { ch += "<div style=\"font-size:0.8rem;color:#555;margin-bottom:4px\"><strong>" + escHtml(c.nickname) + "</strong>: " + escHtml(c.text) + "</div>" })
+      ch += "</div>"
+    }
+    const mine = msg.username === curUserId
+    note.innerHTML = "<div class=\"note-text\">" + escHtml(msg.text) + "</div>"
+      + "<div class=\"note-time\" style=\"display:flex;justify-content:space-between\">"
+      + "<span><i class=\"far fa-clock\"></i> " + (msg.created_at || "").slice(0,16) + " ? " + escHtml(msg.nickname) + "</span>"
+      + "<span>" + (mine ? "<span class=\"note-del\" data-id=\"" + msg.id + "\" style=\"cursor:pointer;color:#e74c3c;font-size:0.75rem;margin-right:8px\"><i class=\"fas fa-trash-alt\"></i></span>" : "")
+      + "<span class=\"reply-btn\" data-id=\"" + msg.id + "\" style=\"cursor:pointer;color:#888;font-size:0.75rem\"><i class=\"fas fa-reply\"></i></span>"
+      + "</span></div>" + ch
+      + "<div class=\"reply-box\" id=\"r" + msg.id + "\" style=\"display:none;margin-top:8px\">"
+      + "<div style=\"display:flex;gap:6px\"><input class=\"ri\" placeholder=\"reply...\" style=\"flex:1;padding:6px 12px;border-radius:20px;border:1px solid rgba(0,0,0,0.1);font-size:0.8rem;outline:none;background:rgba(255,255,255,0.7)\"><button class=\"rs\" data-id=\"" + msg.id + "\" style=\"padding:6px 14px;border:none;border-radius:20px;background:#ff6b9d;color:#fff;cursor:pointer;font-size:0.8rem\">Reply</button></div></div>"
+    wall.appendChild(note)
+  })
+  wall.querySelectorAll(".note-del").forEach(el => el.addEventListener("click", async () => { if (confirm("Delete?")) { await supabase.from("messages").delete().eq("id", el.dataset.id); loadMsgs() }}))
+  wall.querySelectorAll(".reply-btn").forEach(el => el.addEventListener("click", () => { const b = document.getElementById("r" + el.dataset.id); b.style.display = b.style.display === "none" ? "block" : "none"; if (b.style.display === "block") b.querySelector(".ri").focus() }))
+  wall.querySelectorAll(".rs").forEach(el => el.addEventListener("click", async () => {
+    const s = supabase.auth.getSession(); if (!s) { showLogin(); return }
+    const inp = document.getElementById("r" + el.dataset.id).querySelector(".ri")
+    const t = inp.value.trim(); if (!t) return
+    await supabase.from("comments").insert({ message_id: parseInt(el.dataset.id), text: t, username: s.user.id, nickname: s.user.email?.split("@")[0] || "user" })
+    inp.value = ""; loadMsgs()
+  }))
+  const obs = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible") })}, { threshold: 0.1 })
+  wall.querySelectorAll(".fade-up").forEach(el => obs.observe(el))
 }
-
-function escHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}// ===== Blessings =====
+// ===== Blessings =====
 async function initBlessings() {
-  document.getElementById('sendBlessing').addEventListener('click', sendBlessing);
-  document.getElementById('blessText').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendBlessing(); });
-  loadBlessings();
+  document.getElementById("sendBlessing").addEventListener("click", sendBlessing)
+  document.getElementById("blessText").addEventListener("keydown", (e) => { if (e.key === "Enter") sendBlessing() })
+  loadBlessings()
 }
 
 async function sendBlessing() {
-  const name = document.getElementById('blessName').value.trim();
-  const text = document.getElementById('blessText').value.trim();
-  if (!name) { alert('请输入你的名字'); document.getElementById('blessName').focus(); return; }
-  if (!text) { alert('请输入祝福语'); document.getElementById('blessText').focus(); return; }
-  try {
-    await api('/api/blessings', 'POST', {name, text}, false);
-    document.getElementById('blessName').value = '';
-    document.getElementById('blessText').value = '';
-    loadBlessings();
-  } catch(e) { alert('发送失败: ' + e.message); }
+  const name = document.getElementById("blessName").value.trim()
+  const text = document.getElementById("blessText").value.trim()
+  if (!name) { alert("Please enter your name"); return }
+  if (!text) { alert("Please enter your blessing"); return }
+  await supabase.from("blessings").insert({ name, text })
+  document.getElementById("blessName").value = ""
+  document.getElementById("blessText").value = ""
+  loadBlessings()
 }
 
 async function loadBlessings() {
-  const wall = document.getElementById('blessingsWall');
-  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">加载中...</div>';
-  try {
-    const list = await api('/api/blessings', 'GET', null, false);
-    wall.innerHTML = '';
-    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1'];
-    const icons = ['💐','🌸','🌺','🌷','🌹','💕','✨','🌟','🎉','🎊'];
-    list.forEach((b, i) => {
-      const card = document.createElement('div');
-      card.className = 'message-note fade-up';
-      card.style.background = colors[i % colors.length];
-      card.innerHTML = '<div style="font-size:1.2rem;margin-bottom:4px">' + icons[i % icons.length] + ' <strong>' + escHtml(b.name) + '</strong></div>'
-        + '<div class="note-text">' + escHtml(b.text) + '</div>'
-        + '<div class="note-time"><i class="far fa-clock"></i> ' + b.created_at.slice(0,10) + '</div>';
-      wall.appendChild(card);
-    });
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
-  } catch(e) {
-    wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:20px">⚠️ 暂时无法加载祝福墙</div>';
+  const wall = document.getElementById("blessingsWall")
+  wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.4);padding:20px\">loading...</div>"
+  const { data: list } = await supabase.from("blessings").select("*").order("created_at", { ascending: false })
+  wall.innerHTML = ""
+  if (!list || list.length === 0) {
+    wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.3);padding:30px\">No blessings yet...</div>"
+    return
   }
-}function initMusicPlayer() {
-  const player = document.getElementById('musicPlayer'); const btn = document.getElementById('musicToggle');
-  let playing = false;
-  if (!musicUrl) { player.style.display = 'none'; return; }
-  const audio = new Audio(musicUrl); audio.loop = true;
-  function toggle() {
-    if (playing) { audio.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; player.classList.remove('playing'); }
-    else { audio.play().catch(() => {}); btn.innerHTML = '<i class="fas fa-pause"></i>'; player.classList.add('playing'); }
-    playing = !playing;
-  }
-  btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
-  player.addEventListener('click', toggle);
+  const colors = ["#ffe4e6","#fff3cd","#cce5ff","#e8daef","#d5f4e6","#fce4ec","#e8f5e9","#fff8e1"]
+  const icons = ["??","??","??","??","??","??","?","??"]
+  list.forEach((b, i) => {
+    const card = document.createElement("div")
+    card.className = "message-note fade-up"
+    card.style.background = colors[i % colors.length]
+    card.innerHTML = "<div style=\"font-size:1.2rem;margin-bottom:4px\">" + icons[i % icons.length] + " <strong>" + escHtml(b.name) + "</strong></div>"
+      + "<div class=\"note-text\">" + escHtml(b.text) + "</div>"
+      + "<div class=\"note-time\"><i class=\"far fa-clock\"></i> " + (b.created_at || "").slice(0,10) + "</div>"
+    wall.appendChild(card)
+  })
+  const obs = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible") })}, { threshold: 0.1 })
+  wall.querySelectorAll(".fade-up").forEach(el => obs.observe(el))
 }
-function initScrollAnim() {
-  const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
-}
-function initMouseGlow() {
-  const g = document.getElementById('mouseGlow');
-  document.addEventListener('mousemove', (e) => { g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px'; });
-}
-function initHeartBurst() {
-  document.getElementById('heartContainer').addEventListener('click', () => {
-    const r = document.getElementById('heartContainer').getBoundingClientRect();
-    burst(r.left + r.width/2, r.top + r.height/2);
-  });
-}
-function burst(cx, cy) {
-  const colors = ['#ff6b9d','#ff1a5e','#c084fc','#fbbf24','#34d399','#60a5fa','#f472b6','#a78bfa'];
-  const w = document.createElement('div'); w.className = 'particle-burst';
-  w.style.left = cx + 'px'; w.style.top = cy + 'px';
-  for (let i = 0; i < 36; i++) {
-    const p = document.createElement('div'); p.className = 'burst-particle';
-    const a = (Math.PI * 2 * i) / 36; const d = 80 + Math.random() * 120;
-    p.style.setProperty('--tx', Math.cos(a) * d + 'px'); p.style.setProperty('--ty', Math.sin(a) * d + 'px');
-    const sz = 6 + Math.random() * 10; p.style.width = sz + 'px'; p.style.height = sz + 'px';
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
-    p.style.animationDuration = (0.6 + Math.random() * 0.6) + 's'; w.appendChild(p);
-  }
-  document.body.appendChild(w); setTimeout(() => w.remove(), 1500);
-}
-function initBackTop() {
-  const btn = document.getElementById('backTop');
-  window.addEventListener('scroll', () => { btn.classList.toggle('show', window.scrollY > 400); });
-  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-}
-function initSettings() {
-  const overlay = document.getElementById('settingsOverlay');
-  document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e')) { e.preventDefault(); overlay.classList.add('active'); } });
-  document.getElementById('settingsCancel').addEventListener('click', () => overlay.classList.remove('active'));
-  document.getElementById('loginCancel').addEventListener('click', () => document.getElementById('loginOverlay').classList.remove('active'));
-  document.getElementById('loginOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) document.getElementById('loginOverlay').classList.remove('active'); });
-  document.getElementById('settingsSave').addEventListener('click', () => {
-    const her = document.getElementById('settingsHerName').value.trim() || '她';
-    const him = document.getElementById('settingsHimName').value.trim() || '他';
-    document.getElementById('nameHerDisplay').textContent = her;
-    document.getElementById('nameHimDisplay').textContent = him;
-    document.getElementById('footerNames').innerHTML = her + ' &amp; ' + him;
-    overlay.classList.remove('active');
-  });
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('active'); });
-  document.querySelector('.hero-title').addEventListener('dblclick', () => overlay.classList.add('active'));
-}
-</script>
-</body>
-</html>
+
