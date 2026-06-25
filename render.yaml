@@ -1,0 +1,13 @@
+﻿services:
+  - type: web
+    name: love-story
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: LOVE_SECRET_KEY
+        value: love-story-render-deploy-key-2026
+      - key: LOVE_ADMIN_PWD
+        value: love123456
+      - key: LOVE_GIRL_PWD
+        value: love123456
