@@ -4,7 +4,10 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = "love-story-secret-key-change-in-production-2026"
+import os
+
+# ????????????? SECRET_KEY??????????????????
+SECRET_KEY = os.getenv("LOVE_SECRET_KEY", "love-story-secret-key-change-in-production-2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 

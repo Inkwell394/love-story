@@ -5,7 +5,7 @@ from datetime import datetime
 # ===== 用户 =====
 class UserLogin(BaseModel):
     username: str
-    password: str
+    password: str  # min 6 chars
 
 class UserOut(BaseModel):
     username: str
@@ -18,7 +18,7 @@ class TokenOut(BaseModel):
 
 # ===== 留言 =====
 class MessageCreate(BaseModel):
-    text: str
+    text: str  # max 500 chars
 
 class MessageOut(BaseModel):
     id: int
@@ -37,7 +37,7 @@ class MessageOutSimple(BaseModel):
 
 # ===== 评论 =====
 class CommentCreate(BaseModel):
-    text: str
+    text: str  # max 300 chars
 
 class CommentOut(BaseModel):
     id: int
