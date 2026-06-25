@@ -308,7 +308,7 @@ const musicUrl = ''; // <-- Set to your music file URL
 const SUPABASE_URL = 'https://adqboadmgqhwlbmqnxyy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWJvYWRtZ3Fod2xibXFueHl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODcwMjcsImV4cCI6MjA5Nzk2MzAyN30.m9kN6tHes5IzCo99BOSEtb1rqS3tv2jqyt8fBhsu_lQ';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const API_BASE = '';  // ??????????????????? 'http://??IP:8000' // <-- 后端 API 地址，部署时改为服务器地址
 // ============================================================
 //  Code - No need to modify below
