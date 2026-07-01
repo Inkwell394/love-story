@@ -34,6 +34,12 @@ pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 auth_scheme = HTTPBearer(auto_error=False)
 
 def hash_password(password: str) -> str:
+    # bcrypt 有 72 字节限制，超长密码需要截断
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if len(password) > 72:
+        import hashlib
+        password = hashlib.sha256(password).digest()
     return pwd_ctx.hash(password)
 
 def verify_password(plain: str, hashed: str) -> bool:
