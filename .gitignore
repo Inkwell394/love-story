@@ -1,8 +1,33 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
-love_data.db
-uploads/*
-!uploads/.gitkeep
+*.pyd
+.Python
 .env
+*.db
+*.sqlite
+*.log
+backend/__pycache__/
+backend/*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WorkBuddy
+.workbuddy/
+
+# Database dumps
+*.dump
+*.sql
+
+# Static files cache
+static/uploads/*
+!static/uploads/.gitkeep

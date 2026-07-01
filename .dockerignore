@@ -1,0 +1,16 @@
+# Docker 忽略文件
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+*.db
+*.sqlite
+*.log
+.git/
+.gitignore
+fly.toml
+render.yaml
+Dockerfile
+.workbuddy/

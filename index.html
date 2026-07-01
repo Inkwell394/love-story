@@ -1,512 +1,685 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💕 我们的故事 - 情侣纪念网站</title>
-<!-- ============================================================
-     情侣纪念网站 - 单文件 HTML
-     修改指南：
-     1. 情侣名字：搜索「COUPLE.her」和「COUPLE.him」替换引号内的值
-     2. 纪念日日期和事件：搜索「timelineData」数组，修改其中的 date / title / description
-     3. 照片：将照片放入「img/」文件夹，照片链接已更新为当前文件
-     4. 视频：将视频放入「shipin/」文件夹，修改 video 标签中的 source 路径
-     5. 背景音乐：搜索「musicUrl」，替换为真实的音乐文件 URL
-     6. 网站标题：搜索「我们的故事」替换
-     ============================================================ -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Ma+Shan+Zheng&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: 'Noto Serif SC', serif; background: #1a1a2e; color: #fff; overflow-x: hidden; min-height: 100vh; }
-::selection { background: #ff6b9d; color: #fff; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #1a1a2e; }
-::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#ff6b9d,#c084fc); border-radius: 4px; }
-.loader { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #1a1a2e; transition: opacity 0.8s ease, visibility 0.8s ease; }
-.loader.hidden { opacity: 0; visibility: hidden; }
-.loader-heart { font-size: 60px; color: #ff6b9d; animation: pulse 1s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-.hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg,#ff6b9d,#c084fc,#a78bfa,#f472b6); background-size: 400% 400%; animation: heroGrad 10s ease infinite; }
-@keyframes heroGrad { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
-.hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.hero-particle { position: absolute; width: 6px; height: 6px; background: rgba(255,255,255,0.6); border-radius: 50%; animation: float linear infinite; }
-@keyframes float { 0%{transform:translateY(100vh) rotate(0deg);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) rotate(720deg);opacity:0} }
-.hero-content { position: relative; z-index: 2; text-align: center; padding: 20px; }
-.hero-subtitle { font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: rgba(255,255,255,0.85); margin-bottom: 10px; letter-spacing: 2px; }
-.hero-title { font-family: 'Ma Shan Zheng', cursive; font-size: clamp(3rem,10vw,6rem); color: #fff; text-shadow: 0 0 40px rgba(255,107,157,0.5); margin-bottom: 10px; line-height: 1.2; }
-.hero-names { font-family: 'Dancing Script', cursive; font-size: clamp(1.2rem,3vw,2rem); color: rgba(255,255,255,0.9); margin-bottom: 30px; letter-spacing: 4px; }
-.hero-names .name-her { color: #ffe4ec; }
-.hero-names .name-him { color: #e0e7ff; }
-.hero-names .name-heart { color: #ff1a5e; display: inline-block; animation: heartPulse 1.5s ease-in-out infinite; margin: 0 10px; }
-.heart-container { display: flex; align-items: center; justify-content: center; width: 150px; height: 130px; margin: 20px auto; cursor: pointer; }
-.heart { position: relative; width: 120px; height: 108px; animation: heartbeat 1.2s ease-in-out infinite; filter: drop-shadow(0 0 25px rgba(255,26,94,0.5)); }
-.heart::before, .heart::after { content: ''; position: absolute; top: 0; width: 60px; height: 96px; background: #ff1a5e; border-radius: 60px 60px 0 0; }
-.heart::before { left: 60px; transform: rotate(-45deg); transform-origin: 0 100%; }
-.heart::after { left: 0; transform: rotate(45deg); transform-origin: 100% 100%; }
-@keyframes heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} 45%{transform:scale(1.18)} 60%{transform:scale(1)} }
-@keyframes heartPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
-.scroll-down { position: absolute; bottom: 30px; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 0.85rem; animation: bounce 2s ease-in-out infinite; cursor: pointer; text-decoration: none; }
-.scroll-down i { font-size: 1.5rem; }
-@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
-.mouse-glow { position: fixed; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle,rgba(255,107,157,0.15),transparent 70%); pointer-events: none; z-index: 1; transform: translate(-50%,-50%); }
-.section { padding: 80px 20px; position: relative; z-index: 2; }
-.section-title { text-align: center; font-size: clamp(2rem,5vw,3rem); margin-bottom: 15px; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-family: 'Ma Shan Zheng', cursive; }
-.section-subtitle { text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 50px; font-size: 1rem; }
-.fade-up { opacity: 0; transform: translateY(50px); transition: opacity 0.8s ease, transform 0.8s ease; }
-.fade-up.visible { opacity: 1; transform: translateY(0); }
-.timeline { position: relative; max-width: 900px; margin: 0 auto; padding: 20px 0; }
-.timeline::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg,#ff6b9d,#c084fc); transform: translateX(-50%); border-radius: 2px; }
-.timeline-item { position: relative; display: flex; width: 50%; padding: 20px 40px 20px 0; opacity: 0; transform: translateX(-50px); transition: all 0.8s ease; }
-.timeline-item.visible { opacity: 1; transform: translateX(0); }
-.timeline-item:nth-child(even) { margin-left: auto; padding: 20px 0 20px 40px; transform: translateX(50px); }
-.timeline-item:nth-child(even).visible { transform: translateX(0); }
-.timeline-dot { position: absolute; top: 32px; width: 16px; height: 16px; background: #ff6b9d; border: 3px solid #1a1a2e; border-radius: 50%; right: -8px; z-index: 2; box-shadow: 0 0 15px rgba(255,107,157,0.5); transition: transform 0.3s; }
-.timeline-item:nth-child(even) .timeline-dot { right: auto; left: -8px; }
-.timeline-dot:hover { transform: scale(1.5); }
-.timeline-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; transition: all 0.4s ease; cursor: default; }
-.timeline-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 60px rgba(255,107,157,0.2); border-color: rgba(255,107,157,0.3); }
-.timeline-date { font-family: 'Dancing Script', cursive; font-size: 0.9rem; color: #ff6b9d; margin-bottom: 6px; }
-.timeline-card h3 { font-size: 1.2rem; margin-bottom: 8px; color: #f0e6ff; }
-.timeline-card p { font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
-.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-.gallery-item { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: 0 8px 30px rgba(0,0,0,0.3); transition: all 0.4s ease; aspect-ratio: 1; }
-.gallery-item:hover { transform: translateY(-8px) scale(1.03); box-shadow: 0 20px 50px rgba(255,107,157,0.3); }
-.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
-.gallery-item:hover img { transform: scale(1.1); }
-.gallery-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); opacity: 0; transition: opacity 0.4s; display: flex; align-items: flex-end; padding: 20px; }
-.gallery-item:hover .gallery-overlay { opacity: 1; }
-.gallery-overlay span { color: #fff; font-size: 0.9rem; font-weight: 600; }
-.lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-.lightbox.active { display: flex; }
-.lightbox img { max-width: 90vw; max-height: 85vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); transform: scale(0.8); transition: transform 0.4s ease; }
-.lightbox.active img { transform: scale(1); }
-.lightbox-close { position: absolute; top: 25px; right: 35px; font-size: 2rem; color: #fff; cursor: pointer; transition: transform 0.3s; background: none; border: none; }
-.lightbox-close:hover { transform: rotate(90deg); }
-.lightbox-prev, .lightbox-next { position: absolute; top: 50%; transform: translateY(-50%); font-size: 2.5rem; color: rgba(255,255,255,0.7); cursor: pointer; padding: 15px; transition: all 0.3s; background: none; border: none; }
-.lightbox-prev:hover, .lightbox-next:hover { color: #ff6b9d; }
-.lightbox-prev { left: 20px; }
-.lightbox-next { right: 20px; }
-.lightbox-caption { position: absolute; bottom: 30px; color: rgba(255,255,255,0.7); font-size: 1rem; }
-
-/* === Video Section === */
-.video-section { max-width: 800px; margin: 0 auto; padding: 0 20px; }
-.video-wrapper { position: relative; width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); background: #000; }
-.video-wrapper video { width: 100%; display: block; border-radius: 20px; max-height: 70vh; object-fit: contain; }
-.video-caption { text-align: center; margin-top: 20px; color: rgba(255,255,255,0.6); font-size: 0.95rem; line-height: 1.6; }
-.video-caption i { color: #ff6b9d; margin: 0 4px; }
-.message-board { max-width: 800px; margin: 0 auto; padding: 0 20px; }
-.message-form { display: flex; gap: 12px; margin-bottom: 40px; }
-.message-form input { flex: 1; padding: 16px 20px; border: 2px solid rgba(255,255,255,0.1); border-radius: 50px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; outline: none; transition: border-color 0.3s; }
-.message-form input:focus { border-color: #ff6b9d; }
-.message-form input::placeholder { color: rgba(255,255,255,0.4); }
-.message-form button { padding: 16px 30px; border: none; border-radius: 50px; background: linear-gradient(135deg,#ff6b9d,#c084fc); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
-.message-form button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,107,157,0.4); }
-.messages-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-.message-note { padding: 20px; border-radius: 16px; position: relative; min-height: 100px; transition: all 0.3s ease; animation: noteIn 0.4s ease; word-break: break-word; }
-@keyframes noteIn { from{opacity:0;transform:scale(0.8) rotate(-3deg)} to{opacity:1;transform:scale(1) rotate(0)} }
-.message-note:hover { transform: translateY(-4px) rotate(0.5deg); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.message-note .note-text { font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px; color: #333; }
-.message-note .note-time { font-size: 0.75rem; color: rgba(0,0,0,0.5); font-family: 'Dancing Script', cursive; }
-.message-note .note-delete { position: absolute; top: 8px; right: 10px; background: none; border: none; color: rgba(0,0,0,0.3); cursor: pointer; font-size: 0.85rem; transition: color 0.3s; }
-.message-note .note-delete:hover { color: #e74c3c; }
-.clear-messages { display: block; margin: 30px auto 0; padding: 10px 24px; border: 1px solid rgba(255,255,255,0.2); border-radius: 30px; background: transparent; color: rgba(255,255,255,0.6); font-family: 'Noto Serif SC', serif; cursor: pointer; transition: all 0.3s; font-size: 0.85rem; }
-.clear-messages:hover { border-color: #ff6b9d; color: #ff6b9d; background: rgba(255,107,157,0.1); }
-.music-player { position: fixed; bottom: 25px; right: 25px; z-index: 999; background: rgba(30,30,60,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 60px; padding: 10px 18px 10px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); transition: all 0.3s ease; cursor: pointer; }
-.music-player:hover { transform: translateY(-3px); box-shadow: 0 15px 50px rgba(255,107,157,0.2); }
-.music-disc { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#ff6b9d,#c084fc); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; animation: spin 3s linear infinite; animation-play-state: paused; flex-shrink: 0; }
-.music-player.playing .music-disc { animation-play-state: running; }
-@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-.music-info { display: flex; flex-direction: column; gap: 2px; }
-.music-title { font-size: 0.75rem; color: rgba(255,255,255,0.8); white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
-.music-artist { font-size: 0.6rem; color: rgba(255,255,255,0.4); }
-.music-btn { background: none; border: none; color: #ff6b9d; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; padding: 4px; }
-.music-btn:hover { transform: scale(1.2); }
-.music-bar { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
-.music-bar span { width: 3px; background: linear-gradient(to top,#ff6b9d,#c084fc); border-radius: 2px; animation: wave 0.8s ease-in-out infinite alternate; animation-play-state: paused; }
-.music-player.playing .music-bar span { animation-play-state: running; }
-.music-bar span:nth-child(1) { height: 8px; animation-duration: 0.5s; }
-.music-bar span:nth-child(2) { height: 13px; animation-duration: 0.8s; }
-.music-bar span:nth-child(3) { height: 6px; animation-duration: 0.6s; }
-.music-bar span:nth-child(4) { height: 16px; animation-duration: 0.7s; }
-.music-bar span:nth-child(5) { height: 10px; animation-duration: 0.9s; }
-@keyframes wave { from{height:3px} to{height:18px} }
-.footer { text-align: center; padding: 60px 20px 30px; position: relative; z-index: 2; border-top: 1px solid rgba(255,255,255,0.05); }
-.footer-heart { font-size: 2rem; color: #ff6b9d; margin-bottom: 20px; animation: heartbeat 1.5s ease-in-out infinite; display: inline-block; }
-.footer-text { font-family: 'Dancing Script', cursive; font-size: 1.2rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
-.footer-names { font-family: 'Ma Shan Zheng', cursive; font-size: 1.5rem; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 10px 0; }
-.footer-copy { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-top: 20px; }
-.back-top { position: fixed; bottom: 25px; left: 25px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg,#ff6b9d,#c084fc); border: none; color: #fff; font-size: 1.2rem; cursor: pointer; transition: all 0.4s ease; opacity: 0; transform: translateY(20px); pointer-events: none; box-shadow: 0 5px 20px rgba(255,107,157,0.3); }
-.back-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.back-top:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,107,157,0.5); }
-.settings-overlay { position: fixed; inset: 0; z-index: 99998; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
-.settings-overlay.active { display: flex; }
-.settings-panel { background: #2a2a4e; border-radius: 24px; padding: 40px; width: 90%; max-width: 450px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
-.settings-panel h2 { font-family: 'Ma Shan Zheng', cursive; font-size: 1.8rem; text-align: center; margin-bottom: 8px; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.settings-panel .hint { text-align: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-bottom: 25px; }
-.settings-group { margin-bottom: 18px; }
-.settings-group label { display: block; color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 6px; }
-.settings-group input { width: 100%; padding: 12px 16px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; outline: none; transition: border-color 0.3s; }
-.settings-group input:focus { border-color: #ff6b9d; }
-.settings-btns { display: flex; gap: 12px; margin-top: 25px; }
-.settings-btns button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-family: 'Noto Serif SC', serif; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; }
-.settings-save { background: linear-gradient(135deg,#ff6b9d,#c084fc); color: #fff; }
-.settings-save:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,107,157,0.3); }
-.settings-close-btn { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-.settings-close-btn:hover { background: rgba(255,255,255,0.2); }
-.particle-burst { position: fixed; pointer-events: none; z-index: 99999; }
-.burst-particle { position: absolute; border-radius: 50%; animation: burstFly 1s ease-out forwards; }
-@keyframes burstFly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
-@media (max-width: 768px) {
-  .timeline::before { left: 20px; }
-  .timeline-item, .timeline-item:nth-child(even) { width: 100%; padding: 15px 15px 15px 50px; transform: translateX(20px); }
-  .timeline-item.visible, .timeline-item:nth-child(even).visible { transform: translateX(0); }
-  .timeline-dot, .timeline-item:nth-child(even) .timeline-dot { right: auto; left: 12px; }
-  .message-form { flex-direction: column; }
-  .message-form button { width: 100%; }
-  .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-  .music-player { bottom: 15px; right: 15px; padding: 8px 14px 8px 10px; }
-  .back-top { bottom: 15px; left: 15px; width: 38px; height: 38px; font-size: 1rem; }
-  .settings-panel { padding: 28px 20px; }
-}
-@media (max-width: 480px) {
-  .section { padding: 50px 15px; }
-  .messages-wall { grid-template-columns: 1fr; }
-  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-}
-</style>
-</head>
-<body>
-<div class="loader" id="loader"><div class="loader-heart"><i class="fas fa-heart"></i></div></div>
-<div class="mouse-glow" id="mouseGlow"></div>
-<section class="hero" id="hero">
-  <div class="hero-particles" id="heroParticles"></div>
-  <div class="hero-content fade-up visible">
-    <div class="hero-subtitle">💕 我们的独家记忆</div>
-    <h1 class="hero-title">我们的故事</h1>
-    <div class="hero-names"><span class="name-her" id="nameHerDisplay">她</span><span class="name-heart">❤</span><span class="name-him" id="nameHimDisplay">他</span></div>
-    <div class="heart-container" id="heartContainer"><div class="heart"></div></div>
-  </div>
-  <div style="position:absolute;top:20px;right:20px;z-index:10;display:flex;gap:10px;align-items:center">
-  <span id="loginStatus" style="color:rgba(255,255,255,0.7);font-size:0.85rem;font-family:Dancing Script,cursive;display:none"></span>
-  <button id="loginToggleBtn" onclick="showLogin()" style="padding:8px 18px;border-radius:30px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-family:Noto Serif SC,serif;font-size:0.85rem;transition:all 0.3s;backdrop-filter:blur(5px)">登录</button>
-</div>
-<a class="scroll-down" href="#timeline"><span>向下滚动</span><i class="fas fa-chevron-down"></i></a>
-</section>
-<section class="section" id="timeline">
-  <h2 class="section-title fade-up">💫 我们的时光轴</h2>
-  <p class="section-subtitle fade-up">每一个瞬间，都是值得珍藏的永恒</p>
-  <div class="timeline" id="timelineContainer"></div>
-</section>
-<section class="section" id="gallery">
-  <h2 class="section-title fade-up">📸 回忆画廊</h2>
-  <p class="section-subtitle fade-up">每一张照片，都是时光的标本</p>
-  <div class="gallery-grid" id="galleryGrid"></div>
-</section>
-<div class="lightbox" id="lightbox">
-  <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
-  <button class="lightbox-prev" id="lightboxPrev"><i class="fas fa-chevron-left"></i></button>
-  <button class="lightbox-next" id="lightboxNext"><i class="fas fa-chevron-right"></i></button>
-  <img id="lightboxImg" src="" alt=""><div class="lightbox-caption" id="lightboxCaption"></div>
-</div>
-
-<section class="section" id="video">
-  <h2 class="section-title fade-up">🎬 我们的视频</h2>
-  <p class="section-subtitle fade-up">录制下来的温暖瞬间</p>
-  <div class="video-section fade-up">
-    <div class="video-wrapper">
-      <video controls playsinline preload="metadata">
-        <source src="shipin/30569a56ac6837283e3749ce9d30eb4a.mp4" type="video/mp4">
-        您的浏览器不支持视频播放
-      </video>
-    </div>
-    <div class="video-caption">
-      <i class="fas fa-heart"></i> 每一幕都是我们的故事 <i class="fas fa-heart"></i>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="blessings">
-  <h2 class="section-title fade-up">🎉 祝福墙</h2>
-  <p class="section-subtitle fade-up">写下对我们的祝福吧 ❤️</p>
-  <div class="message-board">
-    <div class="message-form fade-up" style="flex-direction:column;gap:10px">
-      <div style="display:flex;gap:10px;width:100%">
-        <input type="text" id="blessName" placeholder="你的名字" maxlength="20" style="flex:0 0 150px;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
-        <input type="text" id="blessText" placeholder="写下你的祝福..." maxlength="280" style="flex:1;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
-      </div>
-      <div style="display:flex;justify-content:center">
-        <button id="sendBlessing" style="padding:10px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff;font-size:1rem;font-family:'Noto Serif SC',serif;cursor:pointer;transition:all 0.3s">💐 送祝福</button>
-      </div>
-    </div>
-    <div class="messages-wall" id="blessingsWall" style="margin-top:10px"></div>
-  </div>
-</section>
-<section class="section" id="messages">
-  <h2 class="section-title fade-up">💌 爱的留言板</h2>
-  <p class="section-subtitle fade-up">写下你想对 TA 说的话</p>
-  <div class="message-board">
-    <div class="message-form fade-up">
-      <input type="text" id="messageInput" placeholder="写下你的心里话..." maxlength="200">
-      <button id="sendMessage"><i class="fas fa-paper-plane"></i> 发送</button>
-    </div>
-    <div class="messages-wall" id="messagesWall"></div>
-    <button class="clear-messages" id="clearMessages"><i class="fas fa-trash-alt"></i> 清空留言</button>
-  </div>
-</section>
-<div class="music-player" id="musicPlayer">
-  <div class="music-disc"><i class="fas fa-music"></i></div>
-  <div class="music-info"><div class="music-title">我们的歌</div><div class="music-artist">— 浪漫时刻 —</div></div>
-  <button class="music-btn" id="musicToggle"><i class="fas fa-play"></i></button>
-  <div class="music-bar"><span></span><span></span><span></span><span></span><span></span></div>
-</div>
-<button class="back-top" id="backTop"><i class="fas fa-arrow-up"></i></button>
-<footer class="footer" id="footer">
-  <div class="footer-heart"><i class="fas fa-heart"></i></div>
-  <div class="footer-text">Made with <span style="color:#ff1a5e;">❤</span> for</div>
-  <div class="footer-names" id="footerNames">她 &amp; 他</div>
-  <div class="footer-copy">© 2024-2026 我们的故事 · All Rights Reserved</div>
-</footer>
-<div class="settings-overlay" id="settingsOverlay">
-  <div class="settings-panel">
-    <h2>⚙️ 设置</h2>
-    <p class="hint">修改情侣名字和纪念日信息</p>
-    <div class="settings-group"><label>她的名字</label><input type="text" id="settingsHerName" value="她"></div>
-    <div class="settings-group"><label>他的名字</label><input type="text" id="settingsHimName" value="他"></div>
-    <div class="settings-btns"><button class="settings-close-btn" id="settingsCancel">取消</button><button class="settings-save" id="settingsSave">保存</button></div>
-  </div>
-</div>
-<script>
-// ============================================================
-//  Configuration - Edit these values to customize your site
-// ============================================================
-const COUPLE = { her: '她', him: '他' };
-const timelineData = [
-  { date: '2019-09-15', title: '第一次相遇', description: '在那个阳光明媚的午后，我们的目光在人群中相遇，故事就这样开始了。' },
-  { date: '2020-11-20', title: '第一次约会', description: '一起看了场电影，喝了杯咖啡，聊了很久很久，仿佛认识了很久。' },
-  { date: '2020-10-01', title: '确定关系', description: '跨年的钟声响起时，我们牵起了彼此的手，决定一起走向未来。' },
-  { date: '2024-01-18', title: '第一次旅行', description: '一起去看海，踩着沙滩，追着浪花，留下了无数美好的回忆。' },
-  { date: '2027-02-01', title: '见家长', description: '带着紧张和期待，走入了彼此的家庭，得到了最温暖的祝福。' },
-  { date: '2025-02-14', title: '第一个情人节', description: '用心准备了惊喜，看着你惊喜的笑容，就是最大的幸福。' }
-];
-const galleryData = [
-  { url: 'img/041ee5a4a9ba15770158951db407ca96.jpg', caption: '💕 我们的故事' },
-  { url: 'img/6e91b0acd8200b703d5f4ae3b92a4cb9.jpg', caption: '🌸 最美时光' },
-  { url: 'img/9da9d30ed1ddb81a0971764bc0834e6b.jpg', caption: '🌊 海边回忆' },
-  { url: 'img/c400c823c237037a633643d06670d810.jpg', caption: '🎂 生日快乐' },
-  { url: 'img/c8a6ae256514722a09bc86417e5fb791.jpg', caption: '🌹 约会日常' },
-  { url: 'img/cc558a227737255014ab96c70379f50e.jpg', caption: '✨ 心动瞬间' },
-  { url: 'img/efe7d6d630d46c8f6dadfa32cb1d38e2.jpg', caption: '🎄 圣诞快乐' },
-  { url: 'img/4da34d6a3722245940a8e5100a46ada8.jpg', caption: '💑 新增美好回忆' },
-];
-const musicUrl = ''; // <-- Set to your music file URL
-
-// ===== Supabase Configuration =====
-const SUPABASE_URL = 'https://adqboadmgqhwlbmqnxyy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWJvYWRtZ3Fod2xibXFueHl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODcwMjcsImV4cCI6MjA5Nzk2MzAyN30.m9kN6tHes5IzCo99BOSEtb1rqS3tv2jqyt8fBhsu_lQ';
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const API_BASE = '';  // ??????????????????? 'http://??IP:8000' // <-- 后端 API 地址，部署时改为服务器地址
-// ============================================================
-//  Code - No need to modify below
-// ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1200);
-  initNames(); initTimeline(); initGallery(); initMessages();
-  initMusicPlayer(); initScrollAnim(); initMouseGlow();
-  initHeartBurst(); initBackTop(); initSettings(); initParticles();
-});
-function initNames() {
-  document.getElementById('nameHerDisplay').textContent = COUPLE.her;
-  document.getElementById('nameHimDisplay').textContent = COUPLE.him;
-  document.getElementById('footerNames').innerHTML = COUPLE.her + ' &amp; ' + COUPLE.him;
-}
-function initParticles() {
-  const c = document.getElementById('heroParticles');
-  for (let i = 0; i < 20; i++) {
-    const p = document.createElement('div'); p.className = 'hero-particle';
-    p.style.left = Math.random() * 100 + '%';
-    const sz = Math.random() * 4 + 3; p.style.width = sz + 'px'; p.style.height = sz + 'px';
-    p.style.animationDuration = (Math.random() * 8 + 6) + 's';
-    p.style.animationDelay = (Math.random() * 8) + 's';
-    p.style.opacity = Math.random() * 0.5 + 0.2; c.appendChild(p);
-  }
-}
-function initTimeline() {
-  const c = document.getElementById('timelineContainer'); c.innerHTML = '';
-  timelineData.forEach((item) => {
-    const el = document.createElement('div'); el.className = 'timeline-item fade-up';
-    el.innerHTML = '<div class="timeline-dot"></div><div class="timeline-card">'
-      + '<div class="timeline-date"><i class="far fa-calendar-alt"></i> ' + item.date + '</div>'
-      + '<h3>' + item.title + '</h3><p>' + item.description + '</p></div>';
-    c.appendChild(el);
-  });
-}
-let lightIdx = 0;
-function initGallery() {
-  const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-  galleryData.forEach((item, i) => {
-    const el = document.createElement('div'); el.className = 'gallery-item fade-up';
-    el.innerHTML = '<img src="' + item.url + '" alt="' + item.caption + '" loading="lazy"><div class="gallery-overlay"><span>' + item.caption + '</span></div>';
-    el.addEventListener('click', () => openLight(i)); grid.appendChild(el);
-  });
-}
-function openLight(i) { lightIdx = i; document.getElementById('lightboxImg').src = galleryData[i].url; document.getElementById('lightboxCaption').textContent = galleryData[i].caption; document.getElementById('lightbox').classList.add('active'); document.body.style.overflow = 'hidden'; }
-function closeLight() { document.getElementById('lightbox').classList.remove('active'); document.body.style.overflow = ''; }
-function moveLight(d) { let i = lightIdx + d; if (i < 0) i = galleryData.length - 1; if (i >= galleryData.length) i = 0; openLight(i); }
-document.getElementById('lightboxClose').addEventListener('click', closeLight);
-document.getElementById('lightboxPrev').addEventListener('click', () => moveLight(-1));
-document.getElementById('lightboxNext').addEventListener('click', () => moveLight(1));
-document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLight(); });
-document.addEventListener('keydown', (e) => {
-  if (!document.getElementById('lightbox').classList.contains('active')) return;
-  if (e.key === 'Escape') closeLight();
-  if (e.key === 'ArrowLeft') moveLight(-1);
-  if (e.key === 'ArrowRight') moveLight(1);
-});
-// ===== Supabase Login =====
-async function doLogin() {
-  const username = document.getElementById("loginUsername").value.trim()
-  const password = document.getElementById("loginPassword").value.trim()
-  if (!username || !password) return
-  const { error } = await supabase.auth.signInWithPassword({ email: username + "@love.local", password })
-  if (error) { document.getElementById("loginError").style.display = "block"; return }
-  document.getElementById("loginOverlay").classList.remove("active")
-  document.getElementById("loginError").style.display = "none"
-  updateLoginUI()
-  loadMsgs()
-}
-
-function logout() {
-  supabase.auth.signOut()
-  updateLoginUI()
-  loadMsgs()
-}
-
-function updateLoginUI() {
-  const session = supabase.auth.getSession()
-  const btn = document.getElementById("loginToggleBtn")
-  const status = document.getElementById("loginStatus")
-  if (session) {
-    btn.textContent = "exit"
-    btn.onclick = logout
-    status.style.display = "inline"
-    status.textContent = session.user.email?.split("@")[0] || "user"
-  } else {
-    btn.textContent = "login"
-    btn.onclick = showLogin
-    status.style.display = "none"
-  }
-}
-
-// ===== Messages =====
-async function initMessages() {
-  updateLoginUI()
-  document.getElementById("sendMessage").addEventListener("click", sendMsg)
-  document.getElementById("messageInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMsg() })
-  loadMsgs()
-}
-
-async function sendMsg() {
-  const input = document.getElementById("messageInput")
-  const text = input.value.trim()
-  if (!text) return
-  const session = supabase.auth.getSession()
-  if (!session) { showLogin(); return }
-  const nickname = session.user.email?.split("@")[0] || "user"
-  await supabase.from("messages").insert({ text, username: session.user.id, nickname })
-  input.value = ""
-  loadMsgs()
-}
-
-async function loadMsgs() {
-  const wall = document.getElementById("messagesWall")
-  wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.4);padding:30px\">loading...</div>"
-  const { data: msgs } = await supabase
-    .from("messages")
-    .select("*, comments(*)")
-    .order("created_at", { ascending: false })
-  wall.innerHTML = ""
-  if (!msgs || msgs.length === 0) return
-  const colors = ["#ffe4e6","#fff3cd","#cce5ff","#e8daef","#d5f4e6","#fce4ec","#e8f5e9","#fff8e1"]
-  const curUserId = supabase.auth.getSession()?.user?.id
-  msgs.forEach((msg, i) => {
-    const note = document.createElement("div")
-    note.className = "message-note fade-up"
-    note.style.background = colors[i % colors.length]
-    let ch = ""
-    if (msg.comments?.length > 0) {
-      ch = "<div style=\"margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.1)\">"
-      msg.comments.forEach(c => { ch += "<div style=\"font-size:0.8rem;color:#555;margin-bottom:4px\"><strong>" + escHtml(c.nickname) + "</strong>: " + escHtml(c.text) + "</div>" })
-      ch += "</div>"
-    }
-    const mine = msg.username === curUserId
-    note.innerHTML = "<div class=\"note-text\">" + escHtml(msg.text) + "</div>"
-      + "<div class=\"note-time\" style=\"display:flex;justify-content:space-between\">"
-      + "<span><i class=\"far fa-clock\"></i> " + (msg.created_at || "").slice(0,16) + " ? " + escHtml(msg.nickname) + "</span>"
-      + "<span>" + (mine ? "<span class=\"note-del\" data-id=\"" + msg.id + "\" style=\"cursor:pointer;color:#e74c3c;font-size:0.75rem;margin-right:8px\"><i class=\"fas fa-trash-alt\"></i></span>" : "")
-      + "<span class=\"reply-btn\" data-id=\"" + msg.id + "\" style=\"cursor:pointer;color:#888;font-size:0.75rem\"><i class=\"fas fa-reply\"></i></span>"
-      + "</span></div>" + ch
-      + "<div class=\"reply-box\" id=\"r" + msg.id + "\" style=\"display:none;margin-top:8px\">"
-      + "<div style=\"display:flex;gap:6px\"><input class=\"ri\" placeholder=\"reply...\" style=\"flex:1;padding:6px 12px;border-radius:20px;border:1px solid rgba(0,0,0,0.1);font-size:0.8rem;outline:none;background:rgba(255,255,255,0.7)\"><button class=\"rs\" data-id=\"" + msg.id + "\" style=\"padding:6px 14px;border:none;border-radius:20px;background:#ff6b9d;color:#fff;cursor:pointer;font-size:0.8rem\">Reply</button></div></div>"
-    wall.appendChild(note)
-  })
-  wall.querySelectorAll(".note-del").forEach(el => el.addEventListener("click", async () => { if (confirm("Delete?")) { await supabase.from("messages").delete().eq("id", el.dataset.id); loadMsgs() }}))
-  wall.querySelectorAll(".reply-btn").forEach(el => el.addEventListener("click", () => { const b = document.getElementById("r" + el.dataset.id); b.style.display = b.style.display === "none" ? "block" : "none"; if (b.style.display === "block") b.querySelector(".ri").focus() }))
-  wall.querySelectorAll(".rs").forEach(el => el.addEventListener("click", async () => {
-    const s = supabase.auth.getSession(); if (!s) { showLogin(); return }
-    const inp = document.getElementById("r" + el.dataset.id).querySelector(".ri")
-    const t = inp.value.trim(); if (!t) return
-    await supabase.from("comments").insert({ message_id: parseInt(el.dataset.id), text: t, username: s.user.id, nickname: s.user.email?.split("@")[0] || "user" })
-    inp.value = ""; loadMsgs()
-  }))
-  const obs = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible") })}, { threshold: 0.1 })
-  wall.querySelectorAll(".fade-up").forEach(el => obs.observe(el))
-}
-// ===== Blessings =====
-async function initBlessings() {
-  document.getElementById("sendBlessing").addEventListener("click", sendBlessing)
-  document.getElementById("blessText").addEventListener("keydown", (e) => { if (e.key === "Enter") sendBlessing() })
-  loadBlessings()
-}
-
-async function sendBlessing() {
-  const name = document.getElementById("blessName").value.trim()
-  const text = document.getElementById("blessText").value.trim()
-  if (!name) { alert("Please enter your name"); return }
-  if (!text) { alert("Please enter your blessing"); return }
-  await supabase.from("blessings").insert({ name, text })
-  document.getElementById("blessName").value = ""
-  document.getElementById("blessText").value = ""
-  loadBlessings()
-}
-
-async function loadBlessings() {
-  const wall = document.getElementById("blessingsWall")
-  wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.4);padding:20px\">loading...</div>"
-  const { data: list } = await supabase.from("blessings").select("*").order("created_at", { ascending: false })
-  wall.innerHTML = ""
-  if (!list || list.length === 0) {
-    wall.innerHTML = "<div style=\"text-align:center;color:rgba(255,255,255,0.3);padding:30px\">No blessings yet...</div>"
-    return
-  }
-  const colors = ["#ffe4e6","#fff3cd","#cce5ff","#e8daef","#d5f4e6","#fce4ec","#e8f5e9","#fff8e1"]
-  const icons = ["??","??","??","??","??","??","?","??"]
-  list.forEach((b, i) => {
-    const card = document.createElement("div")
-    card.className = "message-note fade-up"
-    card.style.background = colors[i % colors.length]
-    card.innerHTML = "<div style=\"font-size:1.2rem;margin-bottom:4px\">" + icons[i % icons.length] + " <strong>" + escHtml(b.name) + "</strong></div>"
-      + "<div class=\"note-text\">" + escHtml(b.text) + "</div>"
-      + "<div class=\"note-time\"><i class=\"far fa-clock\"></i> " + (b.created_at || "").slice(0,10) + "</div>"
-    wall.appendChild(card)
-  })
-  const obs = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible") })}, { threshold: 0.1 })
-  wall.querySelectorAll(".fade-up").forEach(el => obs.observe(el))
-}
-</script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💕 我们的故事 - 情侣纪念网站</title>
+<!-- ============================================================
+     情侣纪念网站 - 单文件 HTML
+     修改指南：
+     1. 情侣名字：搜索「COUPLE.her」和「COUPLE.him」替换引号内的值
+     2. 纪念日日期和事件：搜索「timelineData」数组，修改其中的 date / title / description
+     3. 照片：将照片放入「static/images/」文件夹，照片链接已更新为当前文件
+     4. 视频：将视频放入「static/videos/」文件夹，修改 video 标签中的 source 路径
+     5. 背景音乐：搜索「musicUrl」，替换为真实的音乐文件 URL
+     6. 网站标题：搜索「我们的故事」替换
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Ma+Shan+Zheng&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Noto Serif SC', serif; background: #1a1a2e; color: #fff; overflow-x: hidden; min-height: 100vh; }
+::selection { background: #ff6b9d; color: #fff; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#ff6b9d,#c084fc); border-radius: 4px; }
+.loader { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #1a1a2e; transition: opacity 0.8s ease, visibility 0.8s ease; }
+.loader.hidden { opacity: 0; visibility: hidden; }
+.loader-heart { font-size: 60px; color: #ff6b9d; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+.hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg,#ff6b9d,#c084fc,#a78bfa,#f472b6); background-size: 400% 400%; animation: heroGrad 10s ease infinite; }
+@keyframes heroGrad { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+.hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hero-particle { position: absolute; width: 6px; height: 6px; background: rgba(255,255,255,0.6); border-radius: 50%; animation: float linear infinite; }
+@keyframes float { 0%{transform:translateY(100vh) rotate(0deg);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) rotate(720deg);opacity:0} }
+.hero-content { position: relative; z-index: 2; text-align: center; padding: 20px; }
+.hero-subtitle { font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: rgba(255,255,255,0.85); margin-bottom: 10px; letter-spacing: 2px; }
+.hero-title { font-family: 'Ma Shan Zheng', cursive; font-size: clamp(3rem,10vw,6rem); color: #fff; text-shadow: 0 0 40px rgba(255,107,157,0.5); margin-bottom: 10px; line-height: 1.2; }
+.hero-names { font-family: 'Dancing Script', cursive; font-size: clamp(1.2rem,3vw,2rem); color: rgba(255,255,255,0.9); margin-bottom: 30px; letter-spacing: 4px; }
+.hero-names .name-her { color: #ffe4ec; }
+.hero-names .name-him { color: #e0e7ff; }
+.hero-names .name-heart { color: #ff1a5e; display: inline-block; animation: heartPulse 1.5s ease-in-out infinite; margin: 0 10px; }
+.heart-container { display: flex; align-items: center; justify-content: center; width: 150px; height: 130px; margin: 20px auto; cursor: pointer; }
+.heart { position: relative; width: 120px; height: 108px; animation: heartbeat 1.2s ease-in-out infinite; filter: drop-shadow(0 0 25px rgba(255,26,94,0.5)); }
+.heart::before, .heart::after { content: ''; position: absolute; top: 0; width: 60px; height: 96px; background: #ff1a5e; border-radius: 60px 60px 0 0; }
+.heart::before { left: 60px; transform: rotate(-45deg); transform-origin: 0 100%; }
+.heart::after { left: 0; transform: rotate(45deg); transform-origin: 100% 100%; }
+@keyframes heartbeat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} 45%{transform:scale(1.18)} 60%{transform:scale(1)} }
+@keyframes heartPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+.scroll-down { position: absolute; bottom: 30px; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 0.85rem; animation: bounce 2s ease-in-out infinite; cursor: pointer; text-decoration: none; }
+.scroll-down i { font-size: 1.5rem; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
+.mouse-glow { position: fixed; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle,rgba(255,107,157,0.15),transparent 70%); pointer-events: none; z-index: 1; transform: translate(-50%,-50%); }
+.section { padding: 80px 20px; position: relative; z-index: 2; }
+.section-title { text-align: center; font-size: clamp(2rem,5vw,3rem); margin-bottom: 15px; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-family: 'Ma Shan Zheng', cursive; }
+.section-subtitle { text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 50px; font-size: 1rem; }
+.fade-up { opacity: 0; transform: translateY(50px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+.timeline { position: relative; max-width: 900px; margin: 0 auto; padding: 20px 0; }
+.timeline::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg,#ff6b9d,#c084fc); transform: translateX(-50%); border-radius: 2px; }
+.timeline-item { position: relative; display: flex; width: 50%; padding: 20px 40px 20px 0; opacity: 0; transform: translateX(-50px); transition: all 0.8s ease; }
+.timeline-item.visible { opacity: 1; transform: translateX(0); }
+.timeline-item:nth-child(even) { margin-left: auto; padding: 20px 0 20px 40px; transform: translateX(50px); }
+.timeline-item:nth-child(even).visible { transform: translateX(0); }
+.timeline-dot { position: absolute; top: 32px; width: 16px; height: 16px; background: #ff6b9d; border: 3px solid #1a1a2e; border-radius: 50%; right: -8px; z-index: 2; box-shadow: 0 0 15px rgba(255,107,157,0.5); transition: transform 0.3s; }
+.timeline-item:nth-child(even) .timeline-dot { right: auto; left: -8px; }
+.timeline-dot:hover { transform: scale(1.5); }
+.timeline-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; transition: all 0.4s ease; cursor: default; }
+.timeline-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 60px rgba(255,107,157,0.2); border-color: rgba(255,107,157,0.3); }
+.timeline-date { font-family: 'Dancing Script', cursive; font-size: 0.9rem; color: #ff6b9d; margin-bottom: 6px; }
+.timeline-card h3 { font-size: 1.2rem; margin-bottom: 8px; color: #f0e6ff; }
+.timeline-card p { font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+.gallery-item { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: 0 8px 30px rgba(0,0,0,0.3); transition: all 0.4s ease; aspect-ratio: 1; }
+.gallery-item:hover { transform: translateY(-8px) scale(1.03); box-shadow: 0 20px 50px rgba(255,107,157,0.3); }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+.gallery-item:hover img { transform: scale(1.1); }
+.gallery-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); opacity: 0; transition: opacity 0.4s; display: flex; align-items: flex-end; padding: 20px; }
+.gallery-item:hover .gallery-overlay { opacity: 1; }
+.gallery-overlay span { color: #fff; font-size: 0.9rem; font-weight: 600; }
+.lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+.lightbox.active { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 85vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); transform: scale(0.8); transition: transform 0.4s ease; }
+.lightbox.active img { transform: scale(1); }
+.lightbox-close { position: absolute; top: 25px; right: 35px; font-size: 2rem; color: #fff; cursor: pointer; transition: transform 0.3s; background: none; border: none; }
+.lightbox-close:hover { transform: rotate(90deg); }
+.lightbox-prev, .lightbox-next { position: absolute; top: 50%; transform: translateY(-50%); font-size: 2.5rem; color: rgba(255,255,255,0.7); cursor: pointer; padding: 15px; transition: all 0.3s; background: none; border: none; }
+.lightbox-prev:hover, .lightbox-next:hover { color: #ff6b9d; }
+.lightbox-prev { left: 20px; }
+.lightbox-next { right: 20px; }
+.lightbox-caption { position: absolute; bottom: 30px; color: rgba(255,255,255,0.7); font-size: 1rem; }
+
+/* === Video Section === */
+.video-section { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+.video-wrapper { position: relative; width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); background: #000; }
+.video-wrapper video { width: 100%; display: block; border-radius: 20px; max-height: 70vh; object-fit: contain; }
+.video-caption { text-align: center; margin-top: 20px; color: rgba(255,255,255,0.6); font-size: 0.95rem; line-height: 1.6; }
+.video-caption i { color: #ff6b9d; margin: 0 4px; }
+.message-board { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+.message-form { display: flex; gap: 12px; margin-bottom: 40px; }
+.message-form input { flex: 1; padding: 16px 20px; border: 2px solid rgba(255,255,255,0.1); border-radius: 50px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; outline: none; transition: border-color 0.3s; }
+.message-form input:focus { border-color: #ff6b9d; }
+.message-form input::placeholder { color: rgba(255,255,255,0.4); }
+.message-form button { padding: 16px 30px; border: none; border-radius: 50px; background: linear-gradient(135deg,#ff6b9d,#c084fc); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+.message-form button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,107,157,0.4); }
+.messages-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.message-note { padding: 20px; border-radius: 16px; position: relative; min-height: 100px; transition: all 0.3s ease; animation: noteIn 0.4s ease; word-break: break-word; }
+@keyframes noteIn { from{opacity:0;transform:scale(0.8) rotate(-3deg)} to{opacity:1;transform:scale(1) rotate(0)} }
+.message-note:hover { transform: translateY(-4px) rotate(0.5deg); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.message-note .note-text { font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px; color: #333; }
+.message-note .note-time { font-size: 0.75rem; color: rgba(0,0,0,0.5); font-family: 'Dancing Script', cursive; }
+.message-note .note-delete { position: absolute; top: 8px; right: 10px; background: none; border: none; color: rgba(0,0,0,0.3); cursor: pointer; font-size: 0.85rem; transition: color 0.3s; }
+.message-note .note-delete:hover { color: #e74c3c; }
+.clear-messages { display: block; margin: 30px auto 0; padding: 10px 24px; border: 1px solid rgba(255,255,255,0.2); border-radius: 30px; background: transparent; color: rgba(255,255,255,0.6); font-family: 'Noto Serif SC', serif; cursor: pointer; transition: all 0.3s; font-size: 0.85rem; }
+.clear-messages:hover { border-color: #ff6b9d; color: #ff6b9d; background: rgba(255,107,157,0.1); }
+.music-player { position: fixed; bottom: 25px; right: 25px; z-index: 999; background: rgba(30,30,60,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 60px; padding: 10px 18px 10px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); transition: all 0.3s ease; cursor: pointer; }
+.music-player:hover { transform: translateY(-3px); box-shadow: 0 15px 50px rgba(255,107,157,0.2); }
+.music-disc { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#ff6b9d,#c084fc); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; animation: spin 3s linear infinite; animation-play-state: paused; flex-shrink: 0; }
+.music-player.playing .music-disc { animation-play-state: running; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.music-info { display: flex; flex-direction: column; gap: 2px; }
+.music-title { font-size: 0.75rem; color: rgba(255,255,255,0.8); white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+.music-artist { font-size: 0.6rem; color: rgba(255,255,255,0.4); }
+.music-btn { background: none; border: none; color: #ff6b9d; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; padding: 4px; }
+.music-btn:hover { transform: scale(1.2); }
+.music-bar { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+.music-bar span { width: 3px; background: linear-gradient(to top,#ff6b9d,#c084fc); border-radius: 2px; animation: wave 0.8s ease-in-out infinite alternate; animation-play-state: paused; }
+.music-player.playing .music-bar span { animation-play-state: running; }
+.music-bar span:nth-child(1) { height: 8px; animation-duration: 0.5s; }
+.music-bar span:nth-child(2) { height: 13px; animation-duration: 0.8s; }
+.music-bar span:nth-child(3) { height: 6px; animation-duration: 0.6s; }
+.music-bar span:nth-child(4) { height: 16px; animation-duration: 0.7s; }
+.music-bar span:nth-child(5) { height: 10px; animation-duration: 0.9s; }
+@keyframes wave { from{height:3px} to{height:18px} }
+.footer { text-align: center; padding: 60px 20px 30px; position: relative; z-index: 2; border-top: 1px solid rgba(255,255,255,0.05); }
+.footer-heart { font-size: 2rem; color: #ff6b9d; margin-bottom: 20px; animation: heartbeat 1.5s ease-in-out infinite; display: inline-block; }
+.footer-text { font-family: 'Dancing Script', cursive; font-size: 1.2rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+.footer-names { font-family: 'Ma Shan Zheng', cursive; font-size: 1.5rem; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 10px 0; }
+.footer-copy { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-top: 20px; }
+.back-top { position: fixed; bottom: 25px; left: 25px; z-index: 999; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg,#ff6b9d,#c084fc); border: none; color: #fff; font-size: 1.2rem; cursor: pointer; transition: all 0.4s ease; opacity: 0; transform: translateY(20px); pointer-events: none; box-shadow: 0 5px 20px rgba(255,107,157,0.3); }
+.back-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.back-top:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,107,157,0.5); }
+.settings-overlay { position: fixed; inset: 0; z-index: 99998; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
+.settings-overlay.active { display: flex; }
+.settings-panel { background: #2a2a4e; border-radius: 24px; padding: 40px; width: 90%; max-width: 450px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+.settings-panel h2 { font-family: 'Ma Shan Zheng', cursive; font-size: 1.8rem; text-align: center; margin-bottom: 8px; background: linear-gradient(135deg,#ff6b9d,#c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.settings-panel .hint { text-align: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-bottom: 25px; }
+.settings-group { margin-bottom: 18px; }
+.settings-group label { display: block; color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 6px; }
+.settings-group input { width: 100%; padding: 12px 16px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; font-family: 'Noto Serif SC', serif; outline: none; transition: border-color 0.3s; }
+.settings-group input:focus { border-color: #ff6b9d; }
+.settings-btns { display: flex; gap: 12px; margin-top: 25px; }
+.settings-btns button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-family: 'Noto Serif SC', serif; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; }
+.settings-save { background: linear-gradient(135deg,#ff6b9d,#c084fc); color: #fff; }
+.settings-save:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,107,157,0.3); }
+.settings-close-btn { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+.settings-close-btn:hover { background: rgba(255,255,255,0.2); }
+.particle-burst { position: fixed; pointer-events: none; z-index: 99999; }
+.burst-particle { position: absolute; border-radius: 50%; animation: burstFly 1s ease-out forwards; }
+@keyframes burstFly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+@media (max-width: 768px) {
+  .timeline::before { left: 20px; }
+  .timeline-item, .timeline-item:nth-child(even) { width: 100%; padding: 15px 15px 15px 50px; transform: translateX(20px); }
+  .timeline-item.visible, .timeline-item:nth-child(even).visible { transform: translateX(0); }
+  .timeline-dot, .timeline-item:nth-child(even) .timeline-dot { right: auto; left: 12px; }
+  .message-form { flex-direction: column; }
+  .message-form button { width: 100%; }
+  .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .music-player { bottom: 15px; right: 15px; padding: 8px 14px 8px 10px; }
+  .back-top { bottom: 15px; left: 15px; width: 38px; height: 38px; font-size: 1rem; }
+  .settings-panel { padding: 28px 20px; }
+}
+@media (max-width: 480px) {
+  .section { padding: 50px 15px; }
+  .messages-wall { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="loader" id="loader"><div class="loader-heart"><i class="fas fa-heart"></i></div></div>
+<div class="mouse-glow" id="mouseGlow"></div>
+<section class="hero" id="hero">
+  <div class="hero-particles" id="heroParticles"></div>
+  <div class="hero-content fade-up visible">
+    <div class="hero-subtitle">💕 我们的独家记忆</div>
+    <h1 class="hero-title">我们的故事</h1>
+    <div class="hero-names"><span class="name-her" id="nameHerDisplay">她</span><span class="name-heart">?</span><span class="name-him" id="nameHimDisplay">他</span></div>
+    <div class="heart-container" id="heartContainer"><div class="heart"></div></div>
+  </div>
+  <div style="position:absolute;top:20px;right:20px;z-index:10;display:flex;gap:10px;align-items:center">
+  <span id="loginStatus" style="color:rgba(255,255,255,0.7);font-size:0.85rem;font-family:Dancing Script,cursive;display:none"></span>
+  <button id="loginToggleBtn" onclick="showLogin()" style="padding:8px 18px;border-radius:30px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-family:Noto Serif SC,serif;font-size:0.85rem;transition:all 0.3s;backdrop-filter:blur(5px)">登录</button>
+</div>
+<a class="scroll-down" href="#timeline"><span>向下滚动</span><i class="fas fa-chevron-down"></i></a>
+</section>
+<section class="section" id="timeline">
+  <h2 class="section-title fade-up">📅 我们的时光轴</h2>
+  <p class="section-subtitle fade-up">每一个瞬间，都是值得珍藏的永恒</p>
+  <div class="timeline" id="timelineContainer"></div>
+</section>
+<section class="section" id="gallery">
+  <h2 class="section-title fade-up">📸 回忆画廊</h2>
+  <p class="section-subtitle fade-up">每一张照片，都是时光的标本</p>
+  <div class="gallery-grid" id="galleryGrid"></div>
+</section>
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
+  <button class="lightbox-prev" id="lightboxPrev"><i class="fas fa-chevron-left"></i></button>
+  <button class="lightbox-next" id="lightboxNext"><i class="fas fa-chevron-right"></i></button>
+  <img id="lightboxImg" src="" alt=""><div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<section class="section" id="video">
+  <h2 class="section-title fade-up">🎬 我们的视频</h2>
+  <p class="section-subtitle fade-up">录制下来的温暖瞬间</p>
+  <div class="video-section fade-up">
+    <div class="video-wrapper">
+      <video controls playsinline preload="metadata">
+        <source src="static/videos/30569a56ac6837283e3749ce9d30eb4a.mp4" type="video/mp4">
+        您的浏览器不支持视频播放
+      </video>
+    </div>
+    <div class="video-caption">
+      <i class="fas fa-heart"></i> 每一幕都是我们的故事 <i class="fas fa-heart"></i>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="blessings">
+  <h2 class="section-title fade-up">💝 祝福墙</h2>
+  <p class="section-subtitle fade-up">写下对我们的祝福吧 💌</p>
+  <div class="message-board">
+    <div class="message-form fade-up" style="flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;width:100%">
+        <input type="text" id="blessName" placeholder="你的名字" maxlength="20" style="flex:0 0 150px;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
+        <input type="text" id="blessText" placeholder="写下你的祝福..." maxlength="280" style="flex:1;padding:12px 18px;border:2px solid rgba(255,255,255,0.1);border-radius:50px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;font-family:'Noto Serif SC',serif;outline:none;transition:border-color 0.3s">
+      </div>
+      <div style="display:flex;justify-content:center">
+        <button id="sendBlessing" style="padding:10px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff;font-size:1rem;font-family:'Noto Serif SC',serif;cursor:pointer;transition:all 0.3s">💝 送祝福</button>
+      </div>
+    </div>
+    <div class="messages-wall" id="blessingsWall" style="margin-top:10px"></div>
+  </div>
+</section>
+<section class="section" id="messages">
+  <h2 class="section-title fade-up">💬 爱的留言板</h2>
+  <p class="section-subtitle fade-up">写下你想对 TA 说的话</p>
+  <div class="message-board">
+    <div class="message-form fade-up">
+      <input type="text" id="messageInput" placeholder="写下你的心里话..." maxlength="200">
+      <button id="sendMessage"><i class="fas fa-paper-plane"></i> 发送</button>
+    </div>
+    <div class="messages-wall" id="messagesWall"></div>
+    <button class="clear-messages" id="clearMessages"><i class="fas fa-trash-alt"></i> 清空留言</button>
+  </div>
+</section>
+<div class="music-player" id="musicPlayer">
+  <div class="music-disc"><i class="fas fa-music"></i></div>
+  <div class="music-info"><div class="music-title">我们的歌</div><div class="music-artist">— 浪漫时刻 —</div></div>
+  <button class="music-btn" id="musicToggle"><i class="fas fa-play"></i></button>
+  <div class="music-bar"><span></span><span></span><span></span><span></span><span></span></div>
+</div>
+<button class="back-top" id="backTop"><i class="fas fa-arrow-up"></i></button>
+<footer class="footer" id="footer">
+  <div class="footer-heart"><i class="fas fa-heart"></i></div>
+  <div class="footer-text">Made with <span style="color:#ff1a5e;">?</span> for</div>
+  <div class="footer-names" id="footerNames">她 &amp; 他</div>
+  <div class="footer-copy">? 2024-2026 我们的故事 · All Rights Reserved</div>
+</footer>
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <h2>⚙️ 设置</h2>
+    <p class="hint">修改情侣名字和纪念日信息</p>
+    <div class="settings-group"><label>她的名字</label><input type="text" id="settingsHerName" value="她"></div>
+    <div class="settings-group"><label>他的名字</label><input type="text" id="settingsHimName" value="他"></div>
+    <div class="settings-btns"><button class="settings-close-btn" id="settingsCancel">取消</button><button class="settings-save" id="settingsSave">保存</button></div>
+  </div>
+</div>
+<script>
+// ============================================================
+//  Configuration - Edit these values to customize your site
+// ============================================================
+const COUPLE = { her: '她', him: '他' };
+const timelineData = [
+  { date: '2019-09-15', title: '第一次相遇', description: '在那个阳光明媚的午后，我们的目光在人群中相遇，故事就这样开始了。' },
+  { date: '2020-11-20', title: '第一次约会', description: '一起看了场电影，喝了杯咖啡，聊了很久很久，仿佛认识了很久。' },
+  { date: '2020-10-01', title: '确定关系', description: '跨年的钟声响起时，我们牵起了彼此的手，决定一起走向未来。' },
+  { date: '2024-01-18', title: '第一次旅行', description: '一起去看海，踩着沙滩，追着浪花，留下了无数美好的回忆。' },
+  { date: '2027-02-01', title: '见家长', description: '带着紧张和期待，走入了彼此的家庭，得到了最温暖的祝福。' },
+  { date: '2025-02-14', title: '第一个情人节', description: '用心准备了惊喜，看着你惊喜的笑容，就是最大的幸福。' }
+];
+const galleryData = [
+  { url: 'static/images/041ee5a4a9ba15770158951db407ca96.jpg', caption: '💕 我们的故事' },
+  { url: 'static/images/6e91b0acd8200b703d5f4ae3b92a4cb9.jpg', caption: '✨ 最美时光' },
+  { url: 'static/images/9da9d30ed1ddb81a0971764bc0834e6b.jpg', caption: '🌊 海边回忆' },
+  { url: 'static/images/c400c823c237037a633643d06670d810.jpg', caption: '🎂 生日快乐' },
+  { url: 'static/images/c8a6ae256514722a09bc86417e5fb791.jpg', caption: '💑 约会日常' },
+  { url: 'static/images/cc558a227737255014ab96c70379f50e.jpg', caption: '💓 心动瞬间' },
+  { url: 'static/images/efe7d6d630d46c8f6dadfa32cb1d38e2.jpg', caption: '🎄 圣诞快乐' },
+  { url: 'static/images/4da34d6a3722245940a8e5100a46ada8.jpg', caption: '💖 新增美好回忆' },
+];
+const musicUrl = ''; // <-- Set to your music file URL
+
+// ===== Supabase Configuration =====
+const SUPABASE_URL = 'https://adqboadmgqhwlbmqnxyy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkcWJvYWRtZ3Fod2xibXFueHl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODcwMjcsImV4cCI6MjA5Nzk2MzAyN30.m9kN6tHes5IzCo99BOSEtb1rqS3tv2jqyt8fBhsu_lQ';
+
+let supabase = null;
+try {
+  if (window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) { console.warn('Supabase init failed:', e); }
+const API_BASE = '';  // 后端 API 地址，部署时改为服务器地址 'http://localhost:8000' // <-- 后端 API 地址，部署时改为服务器地址
+// ============================================================
+//  Code - No need to modify below
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1200);
+  initNames(); initTimeline(); initGallery(); initMessages(); initBlessings();
+  initMusicPlayer(); initScrollAnim(); initMouseGlow();
+  initHeartBurst(); initBackTop(); initSettings(); initParticles();
+});
+function initNames() {
+  document.getElementById('nameHerDisplay').textContent = COUPLE.her;
+  document.getElementById('nameHimDisplay').textContent = COUPLE.him;
+  document.getElementById('footerNames').innerHTML = COUPLE.her + ' &amp; ' + COUPLE.him;
+}
+function initParticles() {
+  const c = document.getElementById('heroParticles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div'); p.className = 'hero-particle';
+    p.style.left = Math.random() * 100 + '%';
+    const sz = Math.random() * 4 + 3; p.style.width = sz + 'px'; p.style.height = sz + 'px';
+    p.style.animationDuration = (Math.random() * 8 + 6) + 's';
+    p.style.animationDelay = (Math.random() * 8) + 's';
+    p.style.opacity = Math.random() * 0.5 + 0.2; c.appendChild(p);
+  }
+}
+function initTimeline() {
+  const c = document.getElementById('timelineContainer'); c.innerHTML = '';
+  timelineData.forEach((item) => {
+    const el = document.createElement('div'); el.className = 'timeline-item fade-up';
+    el.innerHTML = '<div class="timeline-dot"></div><div class="timeline-card">'
+      + '<div class="timeline-date"><i class="far fa-calendar-alt"></i> ' + item.date + '</div>'
+      + '<h3>' + item.title + '</h3><p>' + item.description + '</p></div>';
+    c.appendChild(el);
+  });
+}
+let lightIdx = 0;
+function initGallery() {
+  const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
+  galleryData.forEach((item, i) => {
+    const el = document.createElement('div'); el.className = 'gallery-item fade-up';
+    el.innerHTML = '<img src="' + item.url + '" alt="' + item.caption + '" loading="lazy"><div class="gallery-overlay"><span>' + item.caption + '</span></div>';
+    el.addEventListener('click', () => openLight(i)); grid.appendChild(el);
+  });
+}
+function openLight(i) { lightIdx = i; document.getElementById('lightboxImg').src = galleryData[i].url; document.getElementById('lightboxCaption').textContent = galleryData[i].caption; document.getElementById('lightbox').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function closeLight() { document.getElementById('lightbox').classList.remove('active'); document.body.style.overflow = ''; }
+function moveLight(d) { let i = lightIdx + d; if (i < 0) i = galleryData.length - 1; if (i >= galleryData.length) i = 0; openLight(i); }
+document.getElementById('lightboxClose').addEventListener('click', closeLight);
+document.getElementById('lightboxPrev').addEventListener('click', () => moveLight(-1));
+document.getElementById('lightboxNext').addEventListener('click', () => moveLight(1));
+document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLight(); });
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLight();
+  if (e.key === 'ArrowLeft') moveLight(-1);
+  if (e.key === 'ArrowRight') moveLight(1);
+});
+// ===== API Helpers =====
+function getToken() { return localStorage.getItem('loveToken'); }
+function saveToken(t) { localStorage.setItem('loveToken', t); }
+function clearToken() { localStorage.removeItem('loveToken'); updateLoginUI(); }
+
+async function api(url, method, body, auth) {
+  const opts = { method, headers: {} };
+  if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+  if (auth !== false) { const t = getToken(); if (t) opts.headers['Authorization'] = 'Bearer ' + t; }
+  const r = await fetch(API_BASE + url, opts);
+  if (!r.ok) { const e = await r.json().catch(() => ({detail: r.statusText})); throw new Error(e.detail || '请求失败'); }
+  return r.json();
+}
+
+// ===== Login =====
+
+
+function closeLogin() { document.getElementById('loginOverlay').style.display='none'; document.getElementById('loginOverlay').classList.remove('active'); }function showLogin() { document.getElementById('loginOverlay').style.display='flex'; document.getElementById('loginError').style.display='none'; }
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  if (!username || !password) return;
+  try {
+    const r = await fetch(API_BASE + '/api/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    if (!r.ok) { document.getElementById('loginError').style.display='block'; return; }
+    const data = await r.json();
+    saveToken(data.access_token);
+    document.getElementById('loginOverlay').classList.remove('active');
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').style.display='none';
+    updateLoginUI();
+    loadMsgs();
+    window.location.href = "/chat";
+  } catch(e) { alert('登录失败: ' + e.message); }
+}
+
+function logout() { clearToken(); updateLoginUI(); loadMsgs(); }
+
+function updateLoginUI() {
+  const token = getToken();
+  const btn = document.getElementById('loginToggleBtn');
+  const status = document.getElementById('loginStatus');
+  if (token) {
+    btn.textContent = '退出';
+    btn.onclick = logout;
+    status.style.display = 'inline';
+    // 解析 nickname
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      status.textContent = payload.sub;
+    } catch { status.textContent = '已登录'; }
+  } else {
+    btn.textContent = '登录';
+    btn.onclick = showLogin;
+    status.style.display = 'none';
+  }
+}
+
+// ===== Messages =====
+function getMsgs() { return []; } // legacy stub
+
+async function initMessages() {
+  updateLoginUI();
+  document.getElementById('sendMessage').addEventListener('click', sendMsg);
+  document.getElementById('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
+  document.getElementById('clearMessages').addEventListener('click', () => {
+    if (confirm('确定要清空所有留言吗？')) {
+      fetch(API_BASE + '/api/messages', {method:'GET'}).then(r=>r.json()).then(msgs => {
+        const token = getToken();
+        Promise.all(msgs.filter(m=>m.username===getUsername()).map(m =>
+          fetch(API_BASE + '/api/messages/' + m.id, {method:'DELETE', headers:{'Authorization':'Bearer '+token}})
+        )).then(() => loadMsgs());
+      });
+    }
+  });
+}
+
+function getUsername() {
+  try { const t = getToken(); if (!t) return null; return JSON.parse(atob(t.split('.')[1])).sub; } catch { return null; }
+}
+
+async function sendMsg() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!getToken()) { showLogin(); return; }
+  try {
+    await api('/api/messages', 'POST', {text});
+    input.value = '';
+    loadMsgs();
+  } catch(e) { alert('发送失败: ' + e.message); }
+}
+
+async function loadMsgs() {
+  const wall = document.getElementById('messagesWall');
+  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px">加载中...</div>';
+  try {
+    const msgs = await api('/api/messages', 'GET', null, false);
+    wall.innerHTML = '';
+    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1','#e3f2fd','#f3e5f5'];
+    const curUser = getUsername();
+    msgs.forEach((msg, i) => {
+      const color = colors[i % colors.length];
+      const note = document.createElement('div');
+      note.className = 'message-note fade-up';
+      note.style.background = color;
+      let commentsHtml = '';
+      if (msg.comments && msg.comments.length > 0) {
+        commentsHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.1)">';
+        msg.comments.forEach(c => {
+          const isOwner = c.username === curUser;
+          commentsHtml += '<div style="font-size:0.8rem;color:#555;margin-bottom:4px;display:flex;justify-content:space-between"><span><strong>' + escHtml(c.nickname) + '</strong>: ' + escHtml(c.text) + '</span><span style="font-size:0.65rem;color:#999">' + c.created_at.slice(5,16) + (isOwner ? ' <span class="del-comment" data-mid="' + msg.id + '" data-cid="' + c.id + '" style="color:#e74c3c;cursor:pointer">×</span>' : '') + '</span></div>';
+        });
+        commentsHtml += '</div>';
+      }
+      const isOwner = msg.username === curUser;
+      note.innerHTML = '<div class="note-text">' + escHtml(msg.text) + '</div>'
+        + '<div class="note-time" style="display:flex;justify-content:space-between;align-items:center">'
+        + '<span><i class="far fa-clock"></i> ' + msg.created_at.slice(0,16) + ' · ' + escHtml(msg.nickname) + '</span>'
+        + '<span>' + (isOwner ? '<span class="note-delete" data-id="' + msg.id + '" style="margin-left:8px"><i class="fas fa-trash-alt" style="font-size:0.7rem"></i></span>' : '')
+        + '<span class="reply-btn" data-id="' + msg.id + '" style="margin-left:8px;cursor:pointer;color:#888;font-size:0.7rem"><i class="fas fa-reply"></i></span>'
+        + '</span></div>'
+        + commentsHtml
+        + '<div class="reply-box" id="reply-' + msg.id + '" style="display:none;margin-top:8px">'
+        + '<div style="display:flex;gap:6px"><input type="text" class="reply-input" placeholder="回复..." style="flex:1;padding:6px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:20px;font-size:0.8rem;outline:none;background:rgba(255,255,255,0.7)"><button class="reply-send" data-id="' + msg.id + '" style="padding:6px 14px;border:none;border-radius:20px;background:#ff6b9d;color:#fff;cursor:pointer;font-size:0.8rem">回复</button></div></div>';
+      wall.appendChild(note);
+    });
+    // Bind events
+    wall.querySelectorAll('.note-delete').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.dataset.id;
+        if (confirm('删除这条留言？')) { await api('/api/messages/' + id, 'DELETE'); loadMsgs(); }
+      });
+    });
+    wall.querySelectorAll('.reply-btn').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const box = document.getElementById('reply-' + id);
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        if (box.style.display === 'block') box.querySelector('.reply-input').focus();
+      });
+    });
+    wall.querySelectorAll('.reply-send').forEach(el => {
+      el.addEventListener('click', async () => {
+        if (!getToken()) { showLogin(); return; }
+        const id = el.dataset.id;
+        const input = document.getElementById('reply-' + id).querySelector('.reply-input');
+        const text = input.value.trim();
+        if (!text) return;
+        await api('/api/comments/' + id, 'POST', {text});
+        input.value = '';
+        loadMsgs();
+      });
+    });
+    wall.querySelectorAll('.del-comment').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const mid = e.currentTarget.dataset.mid;
+        const cid = e.currentTarget.dataset.cid;
+        await api('/api/comments/' + mid + '/' + cid, 'DELETE');
+        loadMsgs();
+      });
+    });
+    // IntersectionObserver for animations
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  } catch(e) { wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:30px">💔 连接后端失败</div>'; }
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}// ===== Blessings =====
+async function initBlessings() {
+  document.getElementById('sendBlessing').addEventListener('click', sendBlessing);
+  document.getElementById('blessText').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendBlessing(); });
+  loadBlessings();
+}
+
+async function sendBlessing() {
+  const name = document.getElementById('blessName').value.trim();
+  const text = document.getElementById('blessText').value.trim();
+  if (!name) { alert('请输入你的名字'); document.getElementById('blessName').focus(); return; }
+  if (!text) { alert('请输入祝福语'); document.getElementById('blessText').focus(); return; }
+  try {
+    await api('/api/blessings', 'POST', {name, text}, false);
+    document.getElementById('blessName').value = '';
+    document.getElementById('blessText').value = '';
+    loadBlessings();
+  } catch(e) { alert('发送失败: ' + e.message); }
+}
+
+async function loadBlessings() {
+  const wall = document.getElementById('blessingsWall');
+  wall.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px">加载中...</div>';
+  try {
+    const list = await api('/api/blessings', 'GET', null, false);
+    wall.innerHTML = '';
+    const colors = ['#ffe4e6','#fff3cd','#cce5ff','#e8daef','#d5f4e6','#fce4ec','#e8f5e9','#fff8e1'];
+    const icons = ['💕','❤️','🌟','✨','💫','🌸','🌺','🌹','💖','💝'];
+    list.forEach((b, i) => {
+      const card = document.createElement('div');
+      card.className = 'message-note fade-up';
+      card.style.background = colors[i % colors.length];
+      card.innerHTML = '<div style="font-size:1.2rem;margin-bottom:4px">' + icons[i % icons.length] + ' <strong>' + escHtml(b.name) + '</strong></div>'
+        + '<div class="note-text">' + escHtml(b.text) + '</div>'
+        + '<div class="note-time"><i class="far fa-clock"></i> ' + b.created_at.slice(0,10) + '</div>';
+      wall.appendChild(card);
+    });
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    wall.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  } catch(e) {
+    wall.innerHTML = '<div style="text-align:center;color:rgba(255,107,157,0.6);padding:20px">💔 暂时无法加载祝福墙</div>';
+  }
+}function initMusicPlayer() {
+  const player = document.getElementById('musicPlayer'); const btn = document.getElementById('musicToggle');
+  let playing = false;
+  if (!musicUrl) { player.style.display = 'none'; return; }
+  const audio = new Audio(musicUrl); audio.loop = true;
+  function toggle() {
+    if (playing) { audio.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; player.classList.remove('playing'); }
+    else { audio.play().catch(() => {}); btn.innerHTML = '<i class="fas fa-pause"></i>'; player.classList.add('playing'); }
+    playing = !playing;
+  }
+  btn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+  player.addEventListener('click', toggle);
+}
+function initScrollAnim() {
+  const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+}
+function initMouseGlow() {
+  const g = document.getElementById('mouseGlow');
+  document.addEventListener('mousemove', (e) => { g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px'; });
+}
+function initHeartBurst() {
+  document.getElementById('heartContainer').addEventListener('click', () => {
+    const r = document.getElementById('heartContainer').getBoundingClientRect();
+    burst(r.left + r.width/2, r.top + r.height/2);
+  });
+}
+function burst(cx, cy) {
+  const colors = ['#ff6b9d','#ff1a5e','#c084fc','#fbbf24','#34d399','#60a5fa','#f472b6','#a78bfa'];
+  const w = document.createElement('div'); w.className = 'particle-burst';
+  w.style.left = cx + 'px'; w.style.top = cy + 'px';
+  for (let i = 0; i < 36; i++) {
+    const p = document.createElement('div'); p.className = 'burst-particle';
+    const a = (Math.PI * 2 * i) / 36; const d = 80 + Math.random() * 120;
+    p.style.setProperty('--tx', Math.cos(a) * d + 'px'); p.style.setProperty('--ty', Math.sin(a) * d + 'px');
+    const sz = 6 + Math.random() * 10; p.style.width = sz + 'px'; p.style.height = sz + 'px';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    p.style.animationDuration = (0.6 + Math.random() * 0.6) + 's'; w.appendChild(p);
+  }
+  document.body.appendChild(w); setTimeout(() => w.remove(), 1500);
+}
+function initBackTop() {
+  const btn = document.getElementById('backTop');
+  window.addEventListener('scroll', () => { btn.classList.toggle('show', window.scrollY > 400); });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+function initSettings() {
+  const overlay = document.getElementById('settingsOverlay');
+  document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e')) { e.preventDefault(); overlay.classList.add('active'); } });
+  document.getElementById('settingsCancel').addEventListener('click', () => overlay.classList.remove('active'));
+  document.getElementById('loginCancel').addEventListener('click', closeLogin);
+  document.getElementById('loginOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLogin(); });
+  document.getElementById('settingsSave').addEventListener('click', () => {
+    const her = document.getElementById('settingsHerName').value.trim() || '她';
+    const him = document.getElementById('settingsHimName').value.trim() || '他';
+    document.getElementById('nameHerDisplay').textContent = her;
+    document.getElementById('nameHimDisplay').textContent = him;
+    document.getElementById('footerNames').innerHTML = her + ' &amp; ' + him;
+    overlay.classList.remove('active');
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('active'); });
+  document.querySelector('.hero-title').addEventListener('dblclick', () => overlay.classList.add('active'));
+}
+</script>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeLogin()">
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;padding:40px 32px;width:90%;max-width:380px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:56px;height:56px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,#ff6b9d,#c084fc);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">&#x2764;</div>
+      <h2 style="font-family:serif;font-size:1.5rem;color:#fff;margin:0;">登录</h2>
+      <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;margin-top:4px;">输入你们的专属账号</p>
+    </div>
+    <div id="loginError" style="display:none;background:rgba(255,107,157,0.1);border:1px solid rgba(255,107,157,0.2);border-radius:10px;padding:8px 14px;font-size:0.85rem;color:#ff6b9d;margin-bottom:16px;text-align:center;">用户名或密码错误</div>
+    <input id="loginUsername" type="text" placeholder="用户名" autocomplete="username" style="width:100%;padding:12px 16px;margin-bottom:12px;border:2px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;outline:none;box-sizing:border-box;">
+    <input id="loginPassword" type="password" placeholder="密码" autocomplete="current-password" style="width:100%;padding:12px 16px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(255,255,255,0.05);color:#fff;font-size:0.95rem;outline:none;box-sizing:border-box;">
+    <button onclick="doLogin()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">登录</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="closeLogin()" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:0.85rem;cursor:pointer;">取消</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+
+

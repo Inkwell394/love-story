@@ -1,0 +1,26 @@
+# Render.com 部署配置
+# 使用说明：
+# 1. 将代码推送到 GitHub
+# 2. 在 Render.com 上创建新 Web Service，连接 GitHub 仓库
+# 3. Render 会自动读取此文件
+
+services:
+  - type: web
+    name: love-story
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.9"
+      - key: PORT
+        value: "10000"
+    # 免费套餐会在 15 分钟无活动后休眠
+    # 唤醒时需要等待几秒钟
+    healthCheckPath: /api/health
+    plan: free
+
+  # 如果使用 PostgreSQL（需要修改代码）
+  # - type: postgres
+  #   name: love-story-db
+  #   plan: free

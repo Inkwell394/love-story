@@ -48,6 +48,27 @@ class CommentOut(BaseModel):
     created_at: str
 
 
+# ===== 公开留言墙（无需登录） =====
+class PublicMessageCreate(BaseModel):
+    nickname: str
+    text: str
+
+class PublicMessageOut(BaseModel):
+    id: int
+    nickname: str
+    text: str
+    created_at: str
+
+# ===== 情侣私聊 =====
+class ChatMessageCreate(BaseModel):
+    text: str
+
+class ChatMessageOut(BaseModel):
+    id: int
+    sender: str
+    text: str
+    created_at: str
+
 # ===== ?? =====
 class BlessingCreate(BaseModel):
     name: str

@@ -1,0 +1,253 @@
+锘?!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💕 注册 - 我们的故事</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Ma+Shan+Zheng&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: "Noto Serif SC", serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; overflow-y: auto; padding: 20px;
+}
+.particles { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.particle {
+  position: absolute; width: 6px; height: 6px;
+  background: rgba(255,107,157,0.3); border-radius: 50%;
+  animation: float linear infinite;
+}
+@keyframes float {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+}
+.auth-container { position: relative; z-index: 1; width: 100%; max-width: 420px; }
+.auth-card {
+  background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
+  padding: 40px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.auth-icon {
+  width: 64px; height: 64px; margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b9d, #c084fc);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; color: #fff;
+  box-shadow: 0 8px 30px rgba(255,107,157,0.3);
+}
+.auth-title {
+  font-family: "Ma Shan Zheng", cursive;
+  text-align: center; font-size: 2rem; margin-bottom: 4px;
+  background: linear-gradient(135deg, #ff6b9d, #c084fc);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.auth-subtitle { text-align: center; font-size: 0.85rem; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
+.input-group { position: relative; margin-bottom: 16px; }
+.input-group i {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  color: rgba(255,255,255,0.3); font-size: 1rem; transition: color 0.3s;
+}
+.input-group input, .input-group select {
+  width: 100%; padding: 14px 16px 14px 46px;
+  border: 2px solid rgba(255,255,255,0.08); border-radius: 12px;
+  background: rgba(255,255,255,0.05); color: #fff;
+  font-size: 0.95rem; font-family: "Noto Serif SC", serif;
+  outline: none; transition: all 0.3s;
+}
+.input-group select { appearance: none; cursor: pointer; padding-right: 36px; }
+.input-group select option { background: #1a1a2e; color: #fff; }
+.input-group input:focus, .input-group select:focus { border-color: #ff6b9d; background: rgba(255,107,157,0.05); }
+.input-group input:focus ~ i { color: #ff6b9d; }
+.input-group input::placeholder { color: rgba(255,255,255,0.25); }
+.auth-btn {
+  width: 100%; padding: 14px; border-radius: 12px; border: none;
+  font-family: "Noto Serif SC", serif;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+  transition: all 0.3s; letter-spacing: 1px; margin-top: 8px;
+  background: linear-gradient(135deg, #ff6b9d, #c084fc);
+  color: #fff;
+}
+.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,107,157,0.4); }
+.auth-btn:active { transform: translateY(-1px); }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.auth-btn .spinner {
+  display: none; width: 20px; height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.6s linear infinite; margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.auth-btn.loading .btn-text { display: none; }
+.auth-btn.loading .spinner { display: inline-block; }
+.auth-links { text-align: center; margin-top: 20px; }
+.auth-links a { color: rgba(255,255,255,0.45); text-decoration: none; font-size: 0.85rem; transition: color 0.3s; }
+.auth-links a:hover { color: #ff6b9d; }
+.back-home { text-align: center; margin-top: 16px; }
+.back-home a { color: rgba(255,255,255,0.3); text-decoration: none; font-size: 0.8rem; transition: color 0.3s; }
+.back-home a:hover { color: #ff6b9d; }
+.auth-error {
+  background: rgba(255,107,157,0.1); border: 1px solid rgba(255,107,157,0.2);
+  border-radius: 10px; padding: 10px 14px; font-size: 0.85rem;
+  color: #ff6b9d; margin-bottom: 16px; display: none; text-align: center;
+}
+.auth-error.show { display: block; }
+.auth-success {
+  background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.2);
+  border-radius: 10px; padding: 10px 14px; font-size: 0.85rem;
+  color: #48bb78; margin-bottom: 16px; display: none; text-align: center;
+}
+.auth-success.show { display: block; }
+.toggle-pwd {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: rgba(255,255,255,0.25);
+  cursor: pointer; font-size: 0.9rem; padding: 4px;
+}
+.toggle-pwd:hover { color: rgba(255,255,255,0.5); }
+.password-hint { font-size: 0.75rem; color: rgba(255,255,255,0.25); margin-top: -10px; margin-bottom: 16px; padding-left: 4px; }
+@media (max-width: 480px) { .auth-card { padding: 28px 20px; } }
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-icon"><i class="fas fa-heart"></i></div>
+    <h1 class="auth-title">鍒涘缓璐﹀彿</h1>
+    <p class="auth-subtitle">注册鍚庡嵆鍙繘鍏ョ瀵嗙┖闂?/p>
+
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-success" id="authSuccess"></div>
+
+    <form id="registerForm" onsubmit="return false;">
+      <div class="input-group">
+        <input type="email" id="regEmail" placeholder="閭鍦板潃" autocomplete="email" required>
+        <i class="fas fa-envelope"></i>
+      </div>
+      <div class="input-group">
+        <input type="text" id="regNickname" placeholder="鏄电О锛堟樉绀虹敤锛? maxlength="20" autocomplete="name">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="input-group">
+        <input type="password" id="regPassword" placeholder="密码锛堣嚦灏?浣嶏級" minlength="6" autocomplete="new-password" required>
+        <i class="fas fa-lock"></i>
+        <button type="button" class="toggle-pwd" onclick="togglePassword('regPassword', this)" tabindex="-1">
+          <i class="far fa-eye"></i>
+        </button>
+      </div>
+      <div class="password-hint">密码鑷冲皯 6 浣嶏紝寤鸿鍖呭惈瀛楁瘝鍜屾暟瀛?/div>
+      <div class="input-group">
+        <input type="password" id="regConfirm" placeholder="纭密码" autocomplete="new-password" required>
+        <i class="fas fa-lock"></i>
+        <button type="button" class="toggle-pwd" onclick="togglePassword('regConfirm', this)" tabindex="-1">
+          <i class="far fa-eye"></i>
+        </button>
+      </div>
+      <button type="submit" class="auth-btn" id="registerBtn" onclick="handleRegister(event)">
+        <span class="btn-text"><i class="fas fa-user-plus"></i> 注册</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="auth-links">
+      <a href="/login"><i class="fas fa-arrow-left"></i> 宸叉湁璐﹀彿锛熺櫥褰?/a>
+    </div>
+    <div class="back-home">
+      <a href="/"><i class="fas fa-home"></i> 返回棣栭〉</a>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/supabase-auth.js"></script>
+<script>
+(function() {
+  var container = document.getElementById("particles");
+  for (var i = 0; i < 30; i++) {
+    var p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.animationDuration = (10 + Math.random() * 20) + "s";
+    p.style.animationDelay = (Math.random() * 20) + "s";
+    p.style.width = p.style.height = (3 + Math.random() * 6) + "px";
+    container.appendChild(p);
+  }
+})();
+
+function togglePassword(inputId, btn) {
+  var input = document.getElementById(inputId);
+  var icon = btn.querySelector("i");
+  if (input.type === "password") { input.type = "text"; icon.className = "far fa-eye-slash"; }
+  else { input.type = "password"; icon.className = "far fa-eye"; }
+}
+
+function setLoading(btnId, loading) {
+  var btn = document.getElementById(btnId);
+  if (loading) { btn.classList.add("loading"); btn.disabled = true; }
+  else { btn.classList.remove("loading"); btn.disabled = false; }
+}
+
+function showError(msg) { var el = document.getElementById("authError"); el.textContent = msg; el.classList.add("show"); }
+function hideError() { document.getElementById("authError").classList.remove("show"); }
+function showSuccess(msg) { var el = document.getElementById("authSuccess"); el.textContent = msg; el.classList.add("show"); }
+
+async function handleRegister(e) {
+  e.preventDefault();
+  hideError();
+  var email = document.getElementById("regEmail").value.trim();
+  var nickname = document.getElementById("regNickname").value.trim();
+  var password = document.getElementById("regPassword").value;
+  var confirm = document.getElementById("regConfirm").value;
+
+  if (!email) { showError("璇峰～鍐欓偖绠卞湴鍧€"); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("閭鏍煎紡涓嶆纭?); return; }
+  if (!password) { showError("璇疯缃瘑鐮?); return; }
+  if (password.length < 6) { showError("密码鑷冲皯 6 浣?); return; }
+  if (password !== confirm) { showError("涓ゆ密码输入涓嶄竴鑷?); return; }
+
+  setLoading("registerBtn", true);
+  try {
+    if (!window.SupabaseAuth) { showError("Supabase 瀹㈡埛绔皻鏈姞杞?); setLoading("registerBtn", false); return; }
+    // 注册鍒?Supabase
+    var result = await SupabaseAuth.signUp(email, password, { nickname: nickname || "鐢ㄦ埛" });
+    console.log("注册缁撴灉:", result);
+    // 注册鎴愬姛鍚庯紝鍚戝師鏈夌郴缁熶篃注册涓€涓敤我    try {
+      var legacyUser = nickname || email.split("@")[0];
+      await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: legacyUser, password: password, nickname: nickname || "鐢ㄦ埛" })
+      });
+    } catch (legacyErr) {
+      console.warn("原有系统注册澶辫触锛堝彲蹇界暐锛?", legacyErr);
+    }
+    showSuccess("注册鎴愬姛锛佽妫€鏌ラ偖绠辩‘璁ら摼鎺ュ悗登录銆?);
+    document.getElementById("registerForm").reset();
+    setTimeout(function() { window.location.href = "/login"; }, 3000);
+  } catch (err) {
+    console.error("注册澶辫触:", err);
+    if (err.message && err.message.includes("already")) {
+      showError("璇ラ偖绠卞凡琚敞鍐岋紝璇风洿鎺ョ櫥褰?);
+    } else {
+      showError("注册澶辫触: " + (err.message || "鏈煡閿欒"));
+    }
+    setLoading("registerBtn", false);
+  }
+}
+
+// 已登录跳转到首页?SupabaseAuth.onAuthStateChange(function(state) {
+  if (state.isAuthenticated && !state.isLoading) {
+    window.location.href = "/";
+  }
+});
+</script>
+</body>
+</html>

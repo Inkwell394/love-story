@@ -1,0 +1,38 @@
+# Fly.io 配置文件
+# 使用说明：
+# 1. 安装 flyctl: https://fly.io/docs/hands-on/install-flyctl/
+# 2. 登录: flyctl auth login
+# 3. 创建应用: flyctl launch
+# 4. 创建卷: flyctl volumes create lovstory_data --size 1 --region nrt
+# 5. 部署: flyctl deploy
+
+app = "lovestory"
+primary_region = "nrt"  # 东京机房（离中国最近）
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true  # 免费版：不访问时自动停止
+  min_machines_running = 0
+
+[[http_service.checks]]
+  interval = "10s"
+  timeout = "2s"
+  grace_period = "5s"
+  method = "GET"
+  path = "/api/health"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[mounts]]
+  source = "lovstory_data"
+  destination = "/data"

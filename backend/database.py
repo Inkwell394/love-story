@@ -1,7 +1,8 @@
-﻿import sqlite3
-import os
+﻿import os
+import sqlite3
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "love_data.db")
+# 数据库路径：优先从环境变量读取（用于生产环境）
+DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "love_data.db"))
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -45,6 +46,35 @@ def init_db():
             FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
             FOREIGN KEY (username) REFERENCES users(username)
         );
+
+        CREATE TABLE IF NOT EXISTS public_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nickname TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours'))
+        );
+
+        CREATE TABLE IF NOT EXISTS couple_chat (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours'))
+        );
+
+        CREATE TABLE IF NOT EXISTS profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            supabase_uid TEXT UNIQUE,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT,
+            nickname TEXT NOT NULL DEFAULT '',
+            avatar_url TEXT DEFAULT '',
+            bio TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now', '+8 hours'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_profiles_supabase_uid ON profiles(supabase_uid);
+        CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
     """)
     conn.commit()
     conn.close()
